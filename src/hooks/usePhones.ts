@@ -87,6 +87,12 @@ export const usePhones = () => {
     return response;
   }, [fetchPhones]);
 
+  const markSold = useCallback(async (id: number) => {
+    const response = await phoneService.markSold(id);
+    await fetchPhones();
+    return response;
+  }, [fetchPhones]);
+
   const updateFilters = useCallback((next: Partial<typeof filters>) => {
     setFilters((prev) => {
       const updated = { ...prev, ...next, page: next.page ?? 1 };
@@ -118,6 +124,7 @@ export const usePhones = () => {
     filters,
     refresh: fetchPhones,
     createListing,
+    markSold,
     updateFilters,
     setPage,
   };

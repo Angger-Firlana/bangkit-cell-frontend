@@ -8,6 +8,8 @@ import EmptyState from '../components/common/EmptyState';
 import Pagination from '../components/common/Pagination';
 import { usePhones } from '../hooks/usePhones';
 import { formatCurrency } from '../utils/format';
+import PhoneDetailModal from '../components/phone/PhoneDetailModal';
+import type { ListingPhone } from '../types/phone';
 
 interface PhoneListingFormState {
   device_id: string;
@@ -20,8 +22,12 @@ interface PhoneListingFormState {
 }
 
 const PhoneMarketplace = () => {
-  const { listings, devices, statuses, pagination, isLoading, error, createListing, updateFilters, filters, setPage } = usePhones();
+  const { listings, devices, statuses, pagination, isLoading, error, createListing, markSold, updateFilters, filters, setPage } = usePhones();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedPhone, setSelectedPhone] = useState<ListingPhone | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isProcessingDetail, setIsProcessingDetail] = useState(false);
+
   const [form, setForm] = useState<PhoneListingFormState>({
     device_id: '',
     device_query: '',
@@ -81,6 +87,24 @@ const PhoneMarketplace = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleMarkSold = async (id: number) => {
+    setIsProcessingDetail(true);
+    try {
+      await markSold(id);
+      setIsDetailModalOpen(false);
+      setSelectedPhone(null);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Gagal menandai unit sebagai terjual.');
+    } finally {
+      setIsProcessingDetail(false);
+    }
+  };
+
+  const openDetail = (phone: ListingPhone) => {
+    setSelectedPhone(phone);
+    setIsDetailModalOpen(true);
   };
 
   const statusOptions = useMemo(() => {
@@ -185,7 +209,12 @@ const PhoneMarketplace = () => {
                   </div>
                   <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
                     <p className="text-lg font-black text-primary">{formatCurrency(phone.price)}</p>
-                    <button className="text-xs font-black text-gray-400 hover:text-primary uppercase tracking-widest">Detail</button>
+                    <button 
+                      onClick={() => openDetail(phone)}
+                      className="text-xs font-black text-gray-400 hover:text-primary uppercase tracking-widest"
+                    >
+                      Detail
+                    </button>
                   </div>
                 </div>
               </div>
@@ -201,6 +230,14 @@ const PhoneMarketplace = () => {
           onPageChange={setPage}
         />
       )}
+
+      <PhoneDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        phone={selectedPhone}
+        onMarkSold={handleMarkSold}
+        isProcessing={isProcessingDetail}
+      />
 
       <Modal
         isOpen={isAddModalOpen}
