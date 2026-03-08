@@ -1,7 +1,8 @@
 import { ClipboardList, User } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { Input, Select } from '../ui/Input';
+import { Input } from '../ui/Input';
 import type { Device } from '../../types/serviceJob';
+import type { DeviceBrand, DeviceModel } from '../../types/deviceCatalog';
 import type { ServiceJobFormState } from '../../types/serviceUI';
 
 interface ServiceAddModalProps {
@@ -13,6 +14,8 @@ interface ServiceAddModalProps {
   form: ServiceJobFormState;
   setForm: React.Dispatch<React.SetStateAction<ServiceJobFormState>>;
   devices: Device[];
+  brands: DeviceBrand[];
+  models: DeviceModel[];
 }
 
 const ServiceAddModal = ({
@@ -24,12 +27,9 @@ const ServiceAddModal = ({
   form,
   setForm,
   devices,
+  brands,
+  models,
 }: ServiceAddModalProps) => {
-  const deviceOptions = [
-    { label: 'Pilih perangkat', value: '' },
-    ...devices.map((device) => ({ label: device.name, value: device.id })),
-  ];
-
   return (
     <Modal
       isOpen={isOpen}
@@ -73,22 +73,9 @@ const ServiceAddModal = ({
             <h4 className="font-bold text-gray-900 flex items-center text-sm uppercase tracking-wider text-primary">
               <ClipboardList className="h-4 w-4 mr-2" /> Data Perangkat
             </h4>
-            <Select
-              label="Perangkat (Daftar)"
-              options={deviceOptions}
-              value={form.device_id}
-              onChange={(e) => {
-                const selected = devices.find((device) => String(device.id) === e.target.value);
-                setForm((prev) => ({
-                  ...prev,
-                  device_id: e.target.value,
-                  device_query: selected?.name ?? prev.device_query,
-                }));
-              }}
-            />
             <div className="space-y-2">
               <Input
-                label="Perangkat (Ketik Nama)"
+                label="Perangkat"
                 placeholder="Contoh: iPhone 11"
                 value={form.device_query}
                 onChange={(e) => setForm((prev) => ({ ...prev, device_query: e.target.value }))}
@@ -101,9 +88,35 @@ const ServiceAddModal = ({
                 ))}
               </datalist>
               <p className="text-xs text-slate-500 font-semibold">
-                Sistem akan mencocokkan nama perangkat yang diketik dengan katalog perangkat.
+                Ketik nama perangkat. Jika belum ada, sistem akan membuat perangkat baru.
               </p>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Brand (Wajib jika device baru)"
+                placeholder="Contoh: Samsung"
+                value={form.device_brand_query}
+                onChange={(e) => setForm((prev) => ({ ...prev, device_brand_query: e.target.value }))}
+                list="brand-options"
+              />
+              <Input
+                label="Model (Wajib jika device baru)"
+                placeholder="Contoh: Galaxy A15"
+                value={form.device_model_query}
+                onChange={(e) => setForm((prev) => ({ ...prev, device_model_query: e.target.value }))}
+                list="model-options"
+              />
+            </div>
+            <datalist id="brand-options">
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.name} />
+              ))}
+            </datalist>
+            <datalist id="model-options">
+              {models.map((model) => (
+                <option key={model.id} value={model.name} />
+              ))}
+            </datalist>
             <Input
               label="Keluhan / Masalah"
               placeholder="Contoh: LCD pecah, baterai drop, mati total"
