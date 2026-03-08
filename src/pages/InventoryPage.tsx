@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Filter, Plus, AlertTriangle, Package } from 'lucide-react';
+import { Search, Filter, Plus, Package } from 'lucide-react';
 import Modal from '../components/ui/Modal';
+import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
 import { clsx } from 'clsx';
 import PageHeader from '../components/common/PageHeader';
@@ -100,97 +101,140 @@ const InventoryPage = () => {
         )}
       />
 
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
           <input 
             type="text" 
-            placeholder="Cari nama produk, kategori, atau ID..." 
+            placeholder="Cari sparepart..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary text-sm transition-all"
           />
         </div>
-        <button className="px-4 py-2.5 border border-gray-200 rounded-xl flex items-center text-gray-600 hover:bg-gray-50 font-medium transition-colors">
-          <Filter className="h-5 w-5 mr-2" />
+        <button className="px-4 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 font-bold text-sm transition-colors">
+          <Filter className="h-4 w-4 mr-2" />
           Filter
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 text-sm font-semibold px-6 py-4 rounded-2xl">
+        <div className="bg-rose-50 border border-rose-100 text-rose-600 text-[10px] font-bold uppercase tracking-widest px-6 py-4 rounded-2xl">
           {error}
         </div>
       )}
 
       {isLoading ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
-          <div className="h-14 bg-gray-50 border-b border-gray-100"></div>
-          <div className="h-72 bg-gray-50"></div>
+        <div className="grid grid-cols-1 gap-4 animate-pulse">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="h-24 bg-slate-100 rounded-2xl"></div>
+          ))}
         </div>
       ) : filteredInventory.length === 0 ? (
         <EmptyState title="Belum Ada Inventaris" message="Data inventaris akan muncul setelah stok masuk." />
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50/50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">ID Produk</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Nama Produk</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Kategori</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Stok</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Harga Jual</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredInventory.map((item) => {
-                  const stock = item.current_stock ?? 0;
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-xs font-mono font-bold text-gray-500 uppercase tracking-tighter">
-                        {item.product_id ?? item.id}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-bold">{item.product?.name ?? '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.product?.type ?? '-'}</td>
-                      <td className="px-6 py-4">
-                        <span className={clsx('text-lg font-black', stock <= 0 ? 'text-red-600' : 'text-gray-900')}>
-                          {stock}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-primary">
-                        {item.product?.sell_price !== undefined
-                          ? formatCurrency(Number(item.product.sell_price))
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        {stock <= 0 ? (
-                          <span className="flex items-center text-[10px] font-black uppercase tracking-widest text-red-600 bg-red-100 px-2.5 py-1 rounded-full w-fit border border-red-200">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Habis
+        <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden md:block bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50/50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">ID</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Produk</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Kategori</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Stok</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Harga</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 font-bold text-slate-400 text-[10px] uppercase tracking-widest text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredInventory.map((item) => {
+                    const stock = item.current_stock ?? 0;
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4 text-[10px] font-bold text-slate-400 font-mono tracking-tighter">
+                          {item.product_id ?? item.id}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-800">{item.product?.name ?? '-'}</td>
+                        <td className="px-6 py-4 text-xs font-semibold text-slate-500">{item.product?.type ?? '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className={clsx('text-base font-bold', stock <= 3 ? 'text-rose-500' : 'text-slate-800')}>
+                            {stock}
                           </span>
-                        ) : (
-                          <span className="text-[10px] font-black uppercase tracking-widest text-green-600 bg-green-100 px-2.5 py-1 rounded-full border border-green-200">
-                            Tersedia
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          onClick={() => openAdjustModal(item)}
-                          className="text-primary hover:text-blue-800 text-sm font-black uppercase tracking-tighter"
-                        >
-                          Update
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-primary">
+                          {item.product?.sell_price !== undefined
+                            ? formatCurrency(Number(item.product.sell_price))
+                            : '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          {stock <= 0 ? (
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-rose-500 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
+                              Habis
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                              Tersedia
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => openAdjustModal(item)}
+                            className="text-[10px] font-bold text-primary hover:text-primary-dark uppercase tracking-widest px-3 py-1.5 hover:bg-primary/5 rounded-lg transition-colors"
+                          >
+                            Update
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {filteredInventory.map((item) => {
+              const stock = item.current_stock ?? 0;
+              return (
+                <div key={item.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 leading-tight">{item.product?.name ?? '-'}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {item.product_id ?? item.id}</p>
+                    </div>
+                    {stock <= 0 ? (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-rose-500 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">Habis</span>
+                    ) : (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">Tersedia</span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-50 my-3">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stok</p>
+                      <p className={clsx('text-lg font-bold', stock <= 3 ? 'text-rose-500' : 'text-slate-800')}>{stock}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Harga</p>
+                      <p className="text-sm font-bold text-primary">{formatCurrency(Number(item.product?.sell_price ?? 0))}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-md">{item.product?.type ?? '-'}</span>
+                    <Button variant="ghost" size="sm" onClick={() => openAdjustModal(item)} className="text-[10px] uppercase tracking-widest">
+                      Update Stok
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -17,17 +17,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm focus:ring-blue-500',
-      secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
-      outline: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-      ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
+      primary: 'bg-primary text-white hover:bg-primary-dark shadow-md shadow-blue-500/10 focus:ring-primary/20',
+      secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus:ring-slate-500/20',
+      outline: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:ring-primary/10',
+      danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md shadow-red-500/10 focus:ring-red-500/20',
+      ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-500/10',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-xs',
-      md: 'px-4 py-2.5 text-sm',
-      lg: 'px-6 py-3.5 text-base',
+      sm: 'px-3 py-1.5 text-xs font-medium',
+      md: 'px-5 py-2.5 text-sm font-semibold',
+      lg: 'px-7 py-3.5 text-base font-bold',
       icon: 'p-2.5',
     };
 

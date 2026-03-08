@@ -2,19 +2,19 @@ import type { ServiceJob } from '../types/serviceJob';
 import { formatCurrency, formatDateTime } from './format';
 
 export type BluetoothPrinterConnection = {
-  device: BluetoothDevice;
-  server: BluetoothRemoteGATTServer;
-  characteristic: BluetoothRemoteGATTCharacteristic;
+  device: any;
+  server: any;
+  characteristic: any;
 };
 
-const DEFAULT_SERVICE_UUIDS: BluetoothServiceUUID[] = [
+const DEFAULT_SERVICE_UUIDS: any[] = [
   0xFFE0,
   0xFF00,
   0x18F0,
   0xFFF0,
 ];
 
-const DEFAULT_CHARACTERISTIC_UUIDS: BluetoothCharacteristicUUID[] = [
+const DEFAULT_CHARACTERISTIC_UUIDS: any[] = [
   0xFFE1,
   0xFF02,
   0xFF01,
@@ -26,8 +26,8 @@ const encoder = new TextEncoder();
 const chunkSize = 20;
 
 const findWritableCharacteristic = async (
-  services: BluetoothRemoteGATTService[]
-): Promise<BluetoothRemoteGATTCharacteristic | null> => {
+  services: any[]
+): Promise<any | null> => {
   for (const service of services) {
     const characteristics = await service.getCharacteristics();
     for (const characteristic of characteristics) {
@@ -40,8 +40,8 @@ const findWritableCharacteristic = async (
 };
 
 const findCharacteristicByUuid = async (
-  services: BluetoothRemoteGATTService[]
-): Promise<BluetoothRemoteGATTCharacteristic | null> => {
+  services: any[]
+): Promise<any | null> => {
   for (const service of services) {
     for (const uuid of DEFAULT_CHARACTERISTIC_UUIDS) {
       try {
@@ -58,11 +58,11 @@ const findCharacteristicByUuid = async (
 };
 
 export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnection> => {
-  if (!navigator.bluetooth) {
+  if (!(navigator as any).bluetooth) {
     throw new Error('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge di desktop.');
   }
 
-  const device = await navigator.bluetooth.requestDevice({
+  const device = await (navigator as any).bluetooth.requestDevice({
     acceptAllDevices: true,
     optionalServices: DEFAULT_SERVICE_UUIDS,
   });
@@ -84,7 +84,7 @@ export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnect
 };
 
 const writeChunk = async (
-  characteristic: BluetoothRemoteGATTCharacteristic,
+  characteristic: any,
   chunk: Uint8Array
 ) => {
   if (characteristic.properties.writeWithoutResponse) {

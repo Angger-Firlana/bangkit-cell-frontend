@@ -8,11 +8,17 @@ import {
   FileText, 
   Settings, 
   LogOut,
-  Zap
+  Zap,
+  X
 } from 'lucide-react';
 import clsx from 'clsx';
 
-const Sidebar = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Service HP', href: '/service', icon: Smartphone },
@@ -24,54 +30,58 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="flex flex-col w-64 bg-[#0F172A] text-white h-screen fixed left-0 top-0 overflow-y-auto z-40 border-r border-white/5 shadow-2xl">
-      <div className="p-8 mb-4">
+    <div className={clsx(
+      "flex flex-col w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 overflow-y-auto z-50 border-r border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0",
+      isOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
+      <div className="p-6 mb-2 flex items-center justify-between">
         <div className="flex items-center space-x-3 group cursor-pointer">
-          <div className="bg-primary p-2.5 rounded-2xl shadow-xl shadow-blue-600/30 group-hover:scale-110 transition-transform duration-300">
-            <Zap className="h-6 w-6 text-white fill-white" />
+          <div className="bg-primary p-2 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+            <Zap className="h-5 w-5 text-white fill-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter">BANGKIT<span className="text-primary font-black">CELL</span></h1>
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] -mt-1">System v1.0</p>
+            <h1 className="text-lg font-bold tracking-tight">BANGKIT<span className="text-primary">CELL</span></h1>
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest -mt-0.5">Management v1.0</p>
           </div>
         </div>
+        <button 
+          onClick={onClose}
+          className="p-2 lg:hidden text-slate-400 hover:text-white transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
       
-      <nav className="flex-1 px-4 space-y-1.5">
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-4 mb-4">Main Navigation</p>
+      <nav className="flex-1 px-3 space-y-1">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-4 mb-2 mt-4">Main Menu</p>
         {navigation.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}
+            onClick={onClose}
             className={({ isActive }) =>
               clsx(
-                'flex items-center px-4 py-3.5 text-sm font-bold rounded-2xl transition-all duration-200 group relative',
+                'flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group relative',
                 isActive
-                  ? 'bg-primary text-white shadow-xl shadow-blue-900/40'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
               )
             }
           >
             <item.icon className={clsx(
               "mr-3 h-5 w-5 transition-colors",
-              "group-hover:text-white"
+              "group-[.active]:text-primary"
             )} />
             {item.name}
-            {/* Active Indicator dot */}
-            <span className="absolute right-4 w-1.5 h-1.5 rounded-full bg-white opacity-0 group-[.active]:opacity-100 transition-opacity"></span>
+            {/* Active Indicator bar */}
+            <span className="absolute left-0 w-1 h-6 rounded-r-full bg-primary opacity-0 group-[.active]:opacity-100 transition-opacity"></span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-6 mt-auto">
-        <div className="bg-white/5 rounded-3xl p-4 border border-white/5 mb-6">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Cloud Sync</p>
-          <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-            <div className="h-full bg-primary w-3/4 rounded-full"></div>
-          </div>
-        </div>
-        <button className="flex items-center justify-center w-full px-4 py-4 text-sm font-black text-red-400 hover:text-white hover:bg-red-500 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-red-500/20">
-          <LogOut className="mr-2 h-5 w-5" />
+      <div className="p-4 mt-auto">
+        <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all duration-300">
+          <LogOut className="mr-2 h-4 w-4" />
           Sign Out
         </button>
       </div>

@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 const AppLayout = () => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Map paths to titles
   const getPageTitle = (path: string) => {
@@ -20,12 +22,28 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col pl-64 transition-all duration-300">
-        <Topbar title={getPageTitle(location.pathname)} />
-        <main className="flex-1 pt-28 pb-12 px-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
-          <Outlet />
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 overflow-x-hidden">
+      {/* Sidebar - Desktop & Mobile */}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* Overlay for Mobile Sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <div className="flex-1 flex flex-col lg:pl-64 min-w-0 transition-all duration-300">
+        <Topbar 
+          title={getPageTitle(location.pathname)} 
+          onMenuClick={() => setIsSidebarOpen(true)} 
+        />
+        
+        <main className="flex-1 pt-24 pb-12 px-4 sm:px-6 lg:px-8 w-full">
+          <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
