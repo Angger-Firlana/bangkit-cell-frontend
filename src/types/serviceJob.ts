@@ -1,3 +1,5 @@
+import type { Product } from './inventory';
+
 export interface ServiceJob {
   id: number;
   customer_id: number;
@@ -6,6 +8,7 @@ export interface ServiceJob {
   transaction_id?: number | null;
   problem_description: string;
   service_fee?: number | null;
+  estimated_fee?: number | null;
   shop_id?: number | null;
   created_at: string;
   updated_at: string;
@@ -49,6 +52,7 @@ export interface CreateServiceJobRequest {
   customer_email?: string;
   device_id: number;
   problem_description: string;
+  estimated_fee?: number | null;
   shop_id?: number;
 }
 
@@ -65,4 +69,30 @@ export interface UpdateServiceStatusRequest {
 export interface UpdateServiceStatusResponse {
   service_job: ServiceJob;
   transaction?: TransactionSummary;
+}
+
+export interface ServiceJobPart {
+  id: number;
+  service_job_id: number;
+  product_id: number;
+  qty: number;
+  price?: number | null;
+  notes?: string | null;
+  product?: Product;
+}
+
+export interface ServiceJobPartsSummary {
+  subtotal: number;
+}
+
+export interface ServiceJobPartsResponse {
+  parts: ServiceJobPart[];
+  summary: ServiceJobPartsSummary;
+}
+
+export interface AddServiceJobPartRequest {
+  product_id: number;
+  qty: number;
+  price?: number;
+  notes?: string;
 }

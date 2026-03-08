@@ -28,6 +28,19 @@ export const usePhones = () => {
     per_page: 20,
   });
 
+  const normalizeList = <T,>(payload: unknown): T[] => {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+    if (payload && typeof payload === 'object') {
+      const nested = (payload as { data?: unknown }).data;
+      if (Array.isArray(nested)) {
+        return nested;
+      }
+    }
+    return [];
+  };
+
   const fetchPhones = useCallback(async (nextFilters = filters) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
@@ -60,8 +73,8 @@ export const usePhones = () => {
         catalogService.getDevices(),
         catalogService.getPhoneStatuses(),
       ]);
-      setDevices(devicesResponse.data || []);
-      setStatuses(statusesResponse.data || []);
+      setDevices(normalizeList<Device>(devicesResponse?.data ?? devicesResponse));
+      setStatuses(normalizeList<Status>(statusesResponse?.data ?? statusesResponse));
     } catch (error) {
       setDevices([]);
       setStatuses([]);

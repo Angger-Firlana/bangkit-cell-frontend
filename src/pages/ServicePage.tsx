@@ -1,33 +1,73 @@
-import { useMemo, useState } from 'react';
-import { Plus, Smartphone, User, ClipboardList, Search } from 'lucide-react';
-import Modal from '../components/ui/Modal';
-import { Input, Select } from '../components/ui/Input';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import { Select } from '../components/ui/Input';
 import PageHeader from '../components/common/PageHeader';
 import EmptyState from '../components/common/EmptyState';
-import StatusPill from '../components/common/StatusPill';
 import Pagination from '../components/common/Pagination';
 import { useServiceJobs } from '../hooks/useServiceJobs';
-import { formatDate } from '../utils/format';
+import serviceJobService from '../services/serviceJob.service';
+import inventoryService from '../services/inventory.service';
+import type { ServiceJob, ServiceJobPart } from '../types/serviceJob';
+import {
+  buildServiceReceipt,
+  connectBluetoothPrinter,
+  printBluetoothText,
+  type BluetoothPrinterConnection,
+} from '../utils/bluetoothPrinter';
+import paymentMethodService from '../services/paymentMethod.service';
+import type { PaymentMethod } from '../types/pos';
+import type { InventoryItem } from '../types/inventory';
+import ServiceTable from '../components/service/ServiceTable';
+import ServiceAddModal from '../components/service/ServiceAddModal';
+import ServiceDetailModal from '../components/service/ServiceDetailModal';
+import type { CheckoutFormState, PartFormState, ServiceJobFormState } from '../types/serviceUI';
 
 const ServicePage = () => {
-  const { serviceJobs, devices, statuses, pagination, isLoading, error, createServiceJob, updateFilters, filters, setPage } = useServiceJobs();
+  const { serviceJobs, devices, statuses, pagination, isLoading, error, createServiceJob, updateFilters, filters, setPage, refresh } = useServiceJobs();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ServiceJobFormState>({
     customer_name: '',
     customer_phone: '',
     customer_email: '',
+    device_query: '',
     device_id: '',
     problem_description: '',
+    estimated_fee: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-
-  const deviceOptions = useMemo(() => {
-    return [
-      { label: 'Pilih perangkat', value: '' },
-      ...devices.map((device) => ({ label: device.name, value: device.id })),
-    ];
-  }, [devices]);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailService, setDetailService] = useState<ServiceJob | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [printerError, setPrinterError] = useState('');
+  const [printerStatus, setPrinterStatus] = useState<'idle' | 'connecting' | 'connected' | 'printing'>('idle');
+  const printerRef = useRef<BluetoothPrinterConnection | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [checkoutForm, setCheckoutForm] = useState<CheckoutFormState>({
+    payment_method_id: '',
+    paid_amount: '',
+    discount: '',
+    tax: '',
+    service_fee: '',
+  });
+  const [checkoutError, setCheckoutError] = useState('');
+  const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
+  const [parts, setParts] = useState<ServiceJobPart[]>([]);
+  const [partsSubtotal, setPartsSubtotal] = useState(0);
+  const [partsLoading, setPartsLoading] = useState(false);
+  const [partsError, setPartsError] = useState('');
+  const [partForm, setPartForm] = useState<PartFormState>({
+    product_id: '',
+    qty: '1',
+    price: '',
+    notes: '',
+  });
+  const [isPartSubmitting, setIsPartSubmitting] = useState(false);
+  const [partSubmitError, setPartSubmitError] = useState('');
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [autoFillPaid, setAutoFillPaid] = useState(true);
 
   const statusOptions = useMemo(() => {
     return [
@@ -36,30 +76,167 @@ const ServicePage = () => {
     ];
   }, [statuses]);
 
+  const productOptions = useMemo(() => {
+    return [
+      { label: 'Pilih Produk', value: '' },
+      ...inventoryItems.map((item) => ({
+        label: `${item.product?.name ?? 'Produk'} (Stok ${item.current_stock ?? 0})`,
+        value: item.product_id ?? item.id,
+      })),
+    ];
+  }, [inventoryItems]);
+
+  const productPriceMap = useMemo(() => {
+    const map = new Map<number, number>();
+    inventoryItems.forEach((item) => {
+      const price = item.product?.sell_price;
+      if (price !== undefined && price !== null) {
+        map.set(item.product_id ?? item.id, Number(price));
+      }
+    });
+    return map;
+  }, [inventoryItems]);
+
+  const computedServiceFee = useMemo(() => {
+    if (checkoutForm.service_fee) {
+      return Number(checkoutForm.service_fee) || 0;
+    }
+    return detailService?.service_fee ? Number(detailService.service_fee) : 0;
+  }, [checkoutForm.service_fee, detailService?.service_fee]);
+
+  const computedDiscount = useMemo(() => (checkoutForm.discount ? Number(checkoutForm.discount) || 0 : 0), [checkoutForm.discount]);
+  const computedTax = useMemo(() => (checkoutForm.tax ? Number(checkoutForm.tax) || 0 : 0), [checkoutForm.tax]);
+  const computedGrandTotal = useMemo(() => {
+    const subtotal = partsSubtotal ?? 0;
+    return Math.max(0, subtotal + computedServiceFee - computedDiscount + computedTax);
+  }, [partsSubtotal, computedServiceFee, computedDiscount, computedTax]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitError('');
     try {
+      const normalizedQuery = form.device_query.trim().toLowerCase();
+      const exactMatch = devices.find((device) => device.name.toLowerCase() === normalizedQuery);
+      const partialMatches = devices.filter((device) =>
+        device.name.toLowerCase().includes(normalizedQuery)
+      );
+      const resolvedDevice = exactMatch ?? (partialMatches.length === 1 ? partialMatches[0] : null);
+      const deviceId = resolvedDevice?.id ?? (form.device_id ? Number(form.device_id) : null);
+
+      if (!deviceId) {
+        setSubmitError('Perangkat tidak ditemukan. Pilih dari daftar yang tersedia.');
+        setIsSubmitting(false);
+        return;
+      }
+
       await createServiceJob({
         customer_name: form.customer_name,
         customer_phone: form.customer_phone || undefined,
         customer_email: form.customer_email || undefined,
-        device_id: Number(form.device_id),
+        device_id: deviceId,
         problem_description: form.problem_description,
+        estimated_fee: form.estimated_fee ? Number(form.estimated_fee) : undefined,
       });
       setIsAddModalOpen(false);
       setForm({
         customer_name: '',
         customer_phone: '',
         customer_email: '',
+        device_query: '',
         device_id: '',
         problem_description: '',
+        estimated_fee: '',
       });
     } catch (err: any) {
       setSubmitError(err?.response?.data?.message || 'Gagal menyimpan data service.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const fetchInventoryItems = async () => {
+    setInventoryLoading(true);
+    try {
+      const response = await inventoryService.getInventory({ per_page: 200 });
+      setInventoryItems(response.data?.data ?? []);
+    } catch (err) {
+      setInventoryItems([]);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+  const fetchParts = async (serviceId: number) => {
+    setPartsLoading(true);
+    setPartsError('');
+    try {
+      const response = await serviceJobService.listParts(serviceId);
+      setParts(response.data?.parts ?? []);
+      setPartsSubtotal(response.data?.summary?.subtotal ?? 0);
+    } catch (err: any) {
+      setParts([]);
+      setPartsSubtotal(0);
+      setPartsError(err?.response?.data?.message || 'Gagal memuat sparepart.');
+    } finally {
+      setPartsLoading(false);
+    }
+  };
+
+  const fetchSummary = async (serviceId: number) => {
+    try {
+      const response = await serviceJobService.summary(serviceId);
+      if (response.data?.parts_subtotal !== undefined) {
+        setPartsSubtotal(response.data.parts_subtotal);
+      }
+      if (response.data?.service_fee !== undefined && response.data?.service_fee !== null) {
+        setCheckoutForm((prev) => ({
+          ...prev,
+          service_fee: prev.service_fee || String(response.data.service_fee),
+        }));
+      }
+    } catch (err) {
+      // silent
+    }
+  };
+
+  const handleAddPart = async () => {
+    if (!detailService) return;
+    setPartSubmitError('');
+    setIsPartSubmitting(true);
+    try {
+      await serviceJobService.addPart(detailService.id, {
+        product_id: Number(partForm.product_id),
+        qty: Number(partForm.qty),
+        price: partForm.price ? Number(partForm.price) : undefined,
+        notes: partForm.notes || undefined,
+      });
+      setPartForm({ product_id: '', qty: '1', price: '', notes: '' });
+      await fetchParts(detailService.id);
+      await fetchSummary(detailService.id);
+    } catch (err: any) {
+      const payload = err?.response?.data;
+      const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
+      setPartSubmitError((errorList?.[0] as string) || payload?.message || 'Gagal menambah sparepart.');
+    } finally {
+      setIsPartSubmitting(false);
+    }
+  };
+
+  const handleRemovePart = async (partId: number) => {
+    if (!detailService) return;
+    setPartSubmitError('');
+    setIsPartSubmitting(true);
+    try {
+      await serviceJobService.removePart(detailService.id, partId);
+      await fetchParts(detailService.id);
+      await fetchSummary(detailService.id);
+    } catch (err: any) {
+      const payload = err?.response?.data;
+      const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
+      setPartSubmitError((errorList?.[0] as string) || payload?.message || 'Gagal menghapus sparepart.');
+    } finally {
+      setIsPartSubmitting(false);
     }
   };
 
@@ -75,6 +252,122 @@ const ServicePage = () => {
         return { label: 'Unknown', tone: 'neutral' as const };
     }
   };
+
+  const openDetail = async (serviceId: number) => {
+    setIsDetailOpen(true);
+    setDetailLoading(true);
+    setDetailError('');
+    setPrinterError('');
+    setCheckoutError('');
+    setPartSubmitError('');
+    setAutoFillPaid(true);
+    try {
+      const response = await serviceJobService.getById(serviceId);
+      setDetailService(response.data ?? null);
+      setCheckoutForm((prev) => ({
+        ...prev,
+        service_fee: response.data?.service_fee !== undefined && response.data?.service_fee !== null
+          ? String(response.data.service_fee)
+          : prev.service_fee,
+      }));
+      await fetchParts(serviceId);
+      await fetchSummary(serviceId);
+      await fetchInventoryItems();
+    } catch (err: any) {
+      setDetailService(null);
+      setDetailError(err?.response?.data?.message || 'Gagal memuat detail service.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!detailService) return;
+    setPrinterError('');
+    try {
+      if (!printerRef.current) {
+        setPrinterStatus('connecting');
+        printerRef.current = await connectBluetoothPrinter();
+        setPrinterStatus('connected');
+      }
+      setPrinterStatus('printing');
+      const receipt = buildServiceReceipt(detailService);
+      await printBluetoothText(printerRef.current, receipt);
+      setPrinterStatus('connected');
+    } catch (err: any) {
+      setPrinterStatus('idle');
+      setPrinterError(err?.message || 'Gagal mengirim data ke printer.');
+    }
+  };
+
+  const fetchPaymentMethods = async () => {
+    try {
+      const response = await paymentMethodService.getAll();
+      const list = response.data || [];
+      setPaymentMethods(list);
+      if (list.length > 0 && !checkoutForm.payment_method_id) {
+        setCheckoutForm((prev) => ({ ...prev, payment_method_id: String(list[0].id) }));
+      }
+    } catch (err) {
+      setPaymentMethods([]);
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!detailService) return;
+    setCheckoutError('');
+    if (!checkoutForm.payment_method_id) {
+      setCheckoutError('Metode pembayaran wajib dipilih.');
+      return;
+    }
+    if (parts.length === 0) {
+      setCheckoutError('Tambahkan minimal 1 sparepart sebelum checkout.');
+      return;
+    }
+    setIsCheckoutSubmitting(true);
+    try {
+      if (detailService.status?.code === 'service_job_new') {
+        await serviceJobService.updateStatus(detailService.id, {
+          status_code: 'service_job_progress',
+        });
+      }
+      const paidAmount = checkoutForm.paid_amount
+        ? Number(checkoutForm.paid_amount)
+        : computedGrandTotal;
+      const response = await serviceJobService.updateStatus(detailService.id, {
+        status_code: 'service_job_done',
+        auto_checkout: true,
+        payment_method_id: Number(checkoutForm.payment_method_id),
+        paid_amount: paidAmount,
+        discount: checkoutForm.discount ? Number(checkoutForm.discount) : undefined,
+        tax: checkoutForm.tax ? Number(checkoutForm.tax) : undefined,
+        service_fee: checkoutForm.service_fee ? Number(checkoutForm.service_fee) : undefined,
+      });
+      setDetailService(response.data?.service_job ?? detailService);
+      await refresh();
+      await fetchParts(detailService.id);
+      await fetchSummary(detailService.id);
+    } catch (err: any) {
+      const payload = err?.response?.data;
+      const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
+      setCheckoutError((errorList?.[0] as string) || payload?.message || 'Gagal menyelesaikan service.');
+    } finally {
+      setIsCheckoutSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, []);
+
+  useEffect(() => {
+    if (!autoFillPaid) return;
+    if (!detailService) return;
+    setCheckoutForm((prev) => ({
+      ...prev,
+      paid_amount: computedGrandTotal ? String(computedGrandTotal) : prev.paid_amount,
+    }));
+  }, [autoFillPaid, computedGrandTotal, detailService]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -123,7 +416,7 @@ const ServicePage = () => {
         <EmptyState
           title="Belum Ada Service"
           message="Mulai catat service masuk agar proses teknisi dan kasir lebih rapi."
-          icon={<Smartphone className="h-5 w-5" />}
+          icon={<Search className="h-5 w-5" />}
           action={(
             <button
               onClick={() => setIsAddModalOpen(true)}
@@ -134,58 +427,11 @@ const ServicePage = () => {
           )}
         />
       ) : (
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Perangkat</th>
-                  <th className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Pelanggan</th>
-                  <th className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Status</th>
-                  <th className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Masuk</th>
-                  <th className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Keluhan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {serviceJobs.map((service) => {
-                  const status = statusTone(service.status?.code);
-                  return (
-                    <tr key={service.id} className="hover:bg-slate-50/80 transition-all group">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center">
-                          <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mr-4 group-hover:bg-white transition-colors border border-transparent group-hover:border-slate-200">
-                            <Smartphone className="h-6 w-6 text-slate-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-slate-900">{service.device?.name ?? '-'}</p>
-                            <p className="text-[10px] font-black text-primary uppercase tracking-tighter mt-0.5">JOB-{service.id}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-700">{service.customer?.full_name ?? '-'}</span>
-                          <span className="text-[11px] font-bold text-slate-400 mt-1">{service.customer?.phone_number ?? '-'}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <StatusPill label={status.label} tone={status.tone} />
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className="text-sm font-black text-slate-900 tracking-tight">
-                          {formatDate(service.created_at)}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6 text-sm text-slate-600 max-w-xs">
-                        {service.problem_description}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ServiceTable
+          serviceJobs={serviceJobs}
+          getStatusTone={statusTone}
+          onOpenDetail={openDetail}
+        />
       )}
 
       {pagination && (
@@ -195,86 +441,55 @@ const ServicePage = () => {
           onPageChange={setPage}
         />
       )}
-
-      <Modal
+      <ServiceAddModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Input Service Baru"
-        size="lg"
-      >
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {submitError && (
-            <div className="bg-red-50 border border-red-100 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl">
-              {submitError}
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h4 className="font-bold text-gray-900 flex items-center text-sm uppercase tracking-wider text-primary">
-                <User className="h-4 w-4 mr-2" /> Data Pelanggan
-              </h4>
-              <Input
-                label="Nama Pelanggan"
-                placeholder="Nama lengkap"
-                value={form.customer_name}
-                onChange={(e) => setForm((prev) => ({ ...prev, customer_name: e.target.value }))}
-                required
-              />
-              <Input
-                label="Nomor HP"
-                placeholder="08xxxxxxxxxx"
-                value={form.customer_phone}
-                onChange={(e) => setForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
-              />
-              <Input
-                label="Email"
-                type="email"
-                placeholder="email@contoh.com"
-                value={form.customer_email}
-                onChange={(e) => setForm((prev) => ({ ...prev, customer_email: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-bold text-gray-900 flex items-center text-sm uppercase tracking-wider text-primary">
-                <ClipboardList className="h-4 w-4 mr-2" /> Data Perangkat
-              </h4>
-              <Select
-                label="Perangkat"
-                options={deviceOptions}
-                value={form.device_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, device_id: e.target.value }))}
-                required
-              />
-              <Input
-                label="Keluhan / Masalah"
-                placeholder="Contoh: LCD pecah, baterai drop, mati total"
-                value={form.problem_description}
-                onChange={(e) => setForm((prev) => ({ ...prev, problem_description: e.target.value }))}
-                required
-              />
-            </div>
-          </div>
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        form={form}
+        setForm={setForm}
+        devices={devices}
+      />
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-8 py-3 rounded-xl bg-primary text-white font-bold hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-70"
-            >
-              {isSubmitting ? 'Menyimpan...' : 'Simpan Service'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <ServiceDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        isLoading={detailLoading}
+        error={detailError}
+        service={detailService}
+        getStatusTone={statusTone}
+        parts={parts}
+        partsSubtotal={partsSubtotal}
+        partsLoading={partsLoading}
+        partsError={partsError}
+        partForm={partForm}
+        setPartForm={setPartForm}
+        productOptions={productOptions}
+        inventoryLoading={inventoryLoading}
+        isPartSubmitting={isPartSubmitting}
+        partSubmitError={partSubmitError}
+        onAddPart={handleAddPart}
+        onRemovePart={handleRemovePart}
+        printerError={printerError}
+        printerStatus={printerStatus}
+        onPrint={handlePrint}
+        checkoutError={checkoutError}
+        checkoutForm={checkoutForm}
+        setCheckoutForm={setCheckoutForm}
+        paymentMethods={paymentMethods}
+        isCheckoutSubmitting={isCheckoutSubmitting}
+        onCheckout={handleCheckout}
+        computedGrandTotal={computedGrandTotal}
+        onPaidAmountChange={(value) => {
+          setAutoFillPaid(false);
+          setCheckoutForm((prev) => ({ ...prev, paid_amount: value }));
+        }}
+        productPriceMap={productPriceMap}
+      />
     </div>
   );
 };
 
 export default ServicePage;
+
