@@ -41,26 +41,25 @@ export const CardStats: React.FC<{
   className?: string;
 }> = ({ title, value, icon, trend, className }) => {
   return (
-    <Card className={cn("border-none shadow-lg shadow-slate-200/60", className)}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{title}</p>
-          <h4 className="text-2xl font-bold text-slate-800 tracking-tight">{value}</h4>
-          {trend && (
-            <div className={cn("flex items-center mt-2 text-[10px] font-bold uppercase tracking-wider", trend.positive ? "text-emerald-500" : "text-rose-500")}>
-              {trend.positive ? (
-                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-              ) : (
-                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-              )}
-              {trend.value}
-            </div>
-          )}
-        </div>
-        <div className="p-3 bg-slate-50 text-primary rounded-xl transition-colors group-hover:bg-primary group-hover:text-white">
-          {icon}
-        </div>
+    <div className={cn(
+      "bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm shadow-slate-200/50 flex items-start justify-between group hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-500",
+      className
+    )}>
+      <div className="flex-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{title}</p>
+        <h4 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">{value}</h4>
+        {trend && (
+          <div className={cn(
+            "flex items-center text-[10px] font-bold uppercase tracking-wider mt-1",
+            trend.positive ? "text-emerald-500" : "text-rose-500"
+          )}>
+            {trend.value}
+          </div>
+        )}
       </div>
-    </Card>
+      <div className="p-3 bg-slate-50 text-slate-400 rounded-2xl group-hover:bg-primary group-hover:text-white group-hover:scale-110 transition-all duration-500 shadow-sm">
+        {icon}
+      </div>
+    </div>
   );
 };

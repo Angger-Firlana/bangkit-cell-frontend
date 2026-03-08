@@ -1,8 +1,13 @@
 import apiClient from '../api/client';
 import type { ApiResponse } from '../types/common';
-import type { SalesReport, ServiceReport, InventoryReport } from '../types/report';
+import type { SalesReport, ServiceReport, InventoryReport, DashboardStats } from '../types/report';
 
 const reportService = {
+  getSummary: async (): Promise<ApiResponse<DashboardStats>> => {
+    const response = await apiClient.get('/reports/summary');
+    return response.data;
+  },
+
   getSalesReport: async (params?: any): Promise<ApiResponse<SalesReport>> => {
     const response = await apiClient.get('/reports/sales', { params });
     return response.data;
