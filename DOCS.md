@@ -21,6 +21,24 @@
   - sparepart inventory list is lazy-loaded on focus to keep detail modal light.
   - service detail and parts are fetched in parallel when opening the modal.
 
+## UI & UX Overhaul (March 2026)
+- **Modernized Aesthetics:**
+  - Transitioned from a generic layout to a custom, full-width "Glassmorphism" inspired design.
+  - Integrated **Poppins** as the primary typeface for a professional look.
+  - Refined color palette using **Slate** (backgrounds/text) and **Primary Blue** (actions/branding).
+- **Mobile-First Responsiveness:**
+  - **Dynamic Sidebar:** Responsive navigation that hides on mobile with a smooth sliding animation and backdrop.
+  - **Adaptive Topbar:** Includes mobile-only menu triggers and simplified header information.
+  - **POS Bottom Sheet:** Reimagined the POS cart for mobile devices using a bottom-sheet pattern for better thumb-reachability.
+  - **Responsive Tables:** Inventory and Service tables now switch to a card-based view on smaller screens for readability.
+- **Enhanced Component Library:**
+  - **Button:** Added support for `variants` (primary, secondary, ghost, outline), `sizes`, and `isLoading` states.
+  - **Input/Select:** Standardized styling with floating-label-like headers and consistent focus rings.
+  - **Card:** Modernized with subtle borders, shadow-elevation, and increased corner radius (up to `3xl`).
+- **Page-Specific Improvements:**
+  - **Dashboard:** Completely redesigned with high-impact stat cards, visual separators, and improved information hierarchy.
+  - **POS:** Optimized layout for single-screen transactions; products are more discoverable with larger tap targets.
+
 ## Backend
 - added phone marketplace endpoints (`GET /phones`, `POST /phones`, `PATCH /phones/{id}/sold`, `/phones/statuses`). Implementation in `ListingPhoneService` supports search/status filters and pagination.
 - exposed payment-methods (`GET /payment-methods`) plus related controller, routes, and seed data reference.

@@ -1,73 +1,72 @@
-# React + TypeScript + Vite
+# BangkitCell Management System (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive dashboard and Point of Sale (POS) system for smartphone repair shops and retail businesses. Built with **React**, **TypeScript**, and **TailwindCSS**.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🔧 Service Management
+- **Service Job Tracking:** Manage repair orders from entry to completion.
+- **Estimated & Final Fees:** Track customer quotes and final service costs.
+- **Sparepart Integration:** Live inventory lookup and subtraction upon repair completion.
+- **Thermal Printing:** Integrated Web Bluetooth support for printing receipts (Service & Sales).
 
-## React Compiler
+### 🛒 Point of Sale (POS)
+- **Fluid Checkout:** Fast product selection with real-time cart updates.
+- **Payment Methods:** Integrated with backend-driven payment options.
+- **Mobile-Optimized:** Custom bottom-sheet cart for a seamless experience on smartphones.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📦 Inventory & Marketplace
+- **Stock Management:** Real-time tracking with low-stock alerts and easy adjustments.
+- **Phone Marketplace:** Manage listings for second-hand or new phones.
+- **Lazy Loading:** Optimized data fetching for heavy lists like spareparts.
 
-## Expanding the ESLint configuration
+### 📊 Reports & Insights
+- **Sales Analytics:** Visual summaries of daily and monthly revenue.
+- **Service Trends:** Monitor repair volume and technician productivity.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🎨 UI/UX Highlights
+- **Responsive Design:** Fully functional from desktop monitors to mobile phones.
+- **Modern Stack:** TailwindCSS with custom "Glassmorphism" elements and smooth Lucide icons.
+- **Design System:** Consistent, reusable components (Buttons, Cards, Modals, Inputs).
+- **Typography:** Professional aesthetic using the **Poppins** font family.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠 Tech Stack
+- **Framework:** React 18+ (Vite)
+- **Language:** TypeScript
+- **Styling:** TailwindCSS 4
+- **State Management:** Zustand (Auth)
+- **Icons:** Lucide-React
+- **Routing:** React Router DOM v7
+- **API Client:** Axios
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🛠 Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-repo/bangkit-cell-frontend.git
+    cd bangkit-cell-frontend
+    ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3.  **Configure Environment Variables:**
+    Create a `.env` file based on `.env.example`:
+    ```env
+    VITE_API_BASE_URL=http://your-laravel-api.test/api/v1
+    ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4.  **Run in development mode:**
+    ```bash
+    npm run dev
+    ```
+
+5.  **Build for production:**
+    ```bash
+    npm run build
+    ```
+
+## 📄 Documentation
+For detailed integration notes and architectural updates, refer to [DOCS.md](./DOCS.md).
