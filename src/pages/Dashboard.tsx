@@ -1,16 +1,25 @@
 import { Briefcase, CheckCircle, AlertTriangle, TrendingUp, Plus, ArrowRight, User, Clock, Smartphone } from 'lucide-react';
 import { Card, CardStats } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
+import StatusPill from '../components/common/StatusPill';
 import { useReports } from '../hooks/useReports';
 import { useServiceJobs } from '../hooks/useServiceJobs';
 import { useInventory } from '../hooks/useInventory';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import { Link } from 'react-router-dom';
+import serviceJobService from '../services/serviceJob.service';
+import type { ServiceJob } from '../types/serviceJob';
+import { useState } from 'react';
 
 const Dashboard = () => {
   const { dashboardStats, isLoading: isReportsLoading } = useReports();
   const { serviceJobs, isLoading: isJobsLoading } = useServiceJobs();
   const { inventory, isLoading: isInventoryLoading } = useInventory();
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailJob, setDetailJob] = useState<ServiceJob | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
 
   const isLoading = isReportsLoading || isJobsLoading || isInventoryLoading;
 
@@ -19,6 +28,34 @@ const Dashboard = () => {
   
   // Recent service activities
   const recentServiceJobs = serviceJobs.slice(0, 5);
+
+  const getStatusTone = (statusCode?: string) => {
+    switch (statusCode) {
+      case 'service_job_new':
+        return { label: 'Menunggu', tone: 'warning' as const };
+      case 'service_job_progress':
+        return { label: 'Dikerjakan', tone: 'info' as const };
+      case 'service_job_done':
+        return { label: 'Selesai', tone: 'success' as const };
+      default:
+        return { label: 'Unknown', tone: 'neutral' as const };
+    }
+  };
+
+  const openDetail = async (jobId: number) => {
+    setIsDetailOpen(true);
+    setDetailLoading(true);
+    setDetailError('');
+    try {
+      const response = await serviceJobService.getById(jobId);
+      setDetailJob(response.data ?? null);
+    } catch (err: any) {
+      setDetailJob(null);
+      setDetailError(err?.response?.data?.message || 'Gagal memuat detail service.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -90,7 +127,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Left Column - Activities & Actions */}
         <div className="lg:col-span-8 space-y-6 sm:space-y-8">
-          <Card 
+                    <Card 
             title="Aktivitas Service Terbaru" 
             subtitle="Pengerjaan unit terakhir"
             headerAction={<Link to="/service"><Button variant="ghost" size="sm">Lihat Semua</Button></Link>}
@@ -99,33 +136,47 @@ const Dashboard = () => {
               {recentServiceJobs.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">Belum ada aktivitas service</div>
               ) : (
-                recentServiceJobs.map((job) => (
-                  <div key={job.id} className="py-4 flex items-center justify-between group cursor-pointer hover:bg-slate-50/50 transition-colors px-2 -mx-2 rounded-xl">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 sm:p-3 bg-slate-100 rounded-xl text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                        <Smartphone className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{job.device_name}</p>
-                        <div className="flex items-center space-x-2 mt-0.5">
-                          <span className="text-[10px] sm:text-xs font-medium text-slate-400 flex items-center">
-                            <User className="h-3 w-3 mr-1" /> {job.customer_name}
-                          </span>
-                          <span className="text-slate-200 text-[10px]">•</span>
-                          <span className="text-[10px] sm:text-xs font-medium text-slate-400 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" /> {formatDateTime(job.created_at)}
-                          </span>
+                recentServiceJobs.map((job) => {
+                  const status = getStatusTone(job.status?.code);
+                  return (
+                    <div
+                      key={job.id}
+                      onClick={() => openDetail(job.id)}
+                      className="py-4 flex items-start justify-between gap-4 group cursor-pointer hover:bg-slate-50/50 transition-colors px-2 -mx-2 rounded-xl"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className="p-2 sm:p-3 bg-slate-100 rounded-xl text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                          <Smartphone className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">
+                            {job.device?.name ?? 'Perangkat'} <span className="text-[10px] font-bold text-primary uppercase tracking-wider">JOB-{job.id}</span>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="text-[10px] sm:text-xs font-medium text-slate-400 flex items-center">
+                              <User className="h-3 w-3 mr-1" /> {job.customer?.full_name ?? '-'}
+                            </span>
+                            <span className="text-[10px] sm:text-xs font-medium text-slate-400">
+                              {job.customer?.phone_number ?? '-'}
+                            </span>
+                            <span className="text-[10px] sm:text-xs font-medium text-slate-400 flex items-center">
+                              <Clock className="h-3 w-3 mr-1" /> {formatDateTime(job.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1 truncate max-w-[420px]">
+                            {job.problem_description}
+                          </p>
                         </div>
                       </div>
+                      <div className="text-right hidden xs:flex flex-col items-end space-y-2">
+                        <p className="text-sm font-bold text-slate-800">
+                          Est: {job.estimated_fee ? formatCurrency(Number(job.estimated_fee)) : '-'}
+                        </p>
+                        <StatusPill label={status.label} tone={status.tone} />
+                      </div>
                     </div>
-                    <div className="text-right hidden xs:block">
-                      <p className="text-sm font-bold text-slate-800">{formatCurrency(Number(job.estimated_fee || 0))}</p>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter bg-slate-100 text-slate-600">
-                        {job.status?.name}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </Card>
@@ -218,8 +269,78 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        title="Detail Service"
+        size="lg"
+      >
+        {detailLoading ? (
+          <div className="space-y-4 animate-pulse">
+            <div className="h-6 bg-slate-100 rounded-lg"></div>
+            <div className="h-32 bg-slate-100 rounded-2xl"></div>
+          </div>
+        ) : detailError ? (
+          <div className="bg-red-50 border border-red-100 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl">
+            {detailError}
+          </div>
+        ) : detailJob ? (
+          <div className="space-y-5">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">ID Service</p>
+                  <p className="text-lg font-black text-slate-900">JOB-{detailJob.id}</p>
+                </div>
+                <StatusPill label={getStatusTone(detailJob.status?.code).label} tone={getStatusTone(detailJob.status?.code).tone} />
+              </div>
+              <div className="text-sm text-slate-500 font-semibold">
+                Dibuat: {formatDateTime(detailJob.created_at)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">Pelanggan</p>
+                <p className="text-base font-black text-slate-900">{detailJob.customer?.full_name ?? '-'}</p>
+                <p className="text-sm text-slate-500 font-semibold">{detailJob.customer?.phone_number ?? '-'}</p>
+                <p className="text-sm text-slate-500 font-semibold">{detailJob.customer?.email ?? '-'}</p>
+              </div>
+              <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">Perangkat</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Smartphone className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <p className="text-base font-black text-slate-900">{detailJob.device?.name ?? '-'}</p>
+                </div>
+                <p className="text-sm text-slate-500 font-semibold mt-2">Keluhan</p>
+                <p className="text-sm text-slate-700">{detailJob.problem_description}</p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">Estimasi</p>
+              <p className="text-lg font-black text-slate-900">
+                {detailJob.estimated_fee ? formatCurrency(Number(detailJob.estimated_fee)) : '-'}
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <Link to="/service">
+                <Button size="sm">Buka Manajemen Service</Button>
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };
 
 export default Dashboard;
+
+
+
+

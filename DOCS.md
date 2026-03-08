@@ -20,6 +20,9 @@
 - performance optimizations:
   - sparepart inventory list is lazy-loaded on focus to keep detail modal light.
   - service detail and parts are fetched in parallel when opening the modal.
+- dashboard updates:
+  - recent service activity now shows device, customer, phone, problem, estimate, and status badge.
+  - activity items open a lightweight detail modal.
 
 ## UI & UX Overhaul (March 2026)
 - **Modernized Aesthetics:**
