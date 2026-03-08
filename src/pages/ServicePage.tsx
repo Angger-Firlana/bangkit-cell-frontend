@@ -183,23 +183,6 @@ const ServicePage = () => {
     }
   };
 
-  const fetchSummary = async (serviceId: number) => {
-    try {
-      const response = await serviceJobService.summary(serviceId);
-      if (response.data?.parts_subtotal !== undefined) {
-        setPartsSubtotal(response.data.parts_subtotal);
-      }
-      if (response.data?.service_fee !== undefined && response.data?.service_fee !== null) {
-        setCheckoutForm((prev) => ({
-          ...prev,
-          service_fee: prev.service_fee || String(response.data.service_fee),
-        }));
-      }
-    } catch (err) {
-      // silent
-    }
-  };
-
   const handleAddPart = async () => {
     if (!detailService) return;
     setPartSubmitError('');
@@ -213,7 +196,6 @@ const ServicePage = () => {
       });
       setPartForm({ product_id: '', qty: '1', price: '', notes: '' });
       await fetchParts(detailService.id);
-      await fetchSummary(detailService.id);
     } catch (err: any) {
       const payload = err?.response?.data;
       const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
@@ -230,7 +212,6 @@ const ServicePage = () => {
     try {
       await serviceJobService.removePart(detailService.id, partId);
       await fetchParts(detailService.id);
-      await fetchSummary(detailService.id);
     } catch (err: any) {
       const payload = err?.response?.data;
       const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
@@ -262,17 +243,20 @@ const ServicePage = () => {
     setPartSubmitError('');
     setAutoFillPaid(true);
     try {
-      const response = await serviceJobService.getById(serviceId);
-      setDetailService(response.data ?? null);
+      const [detailResponse, partsResponse] = await Promise.all([
+        serviceJobService.getById(serviceId),
+        serviceJobService.listParts(serviceId),
+      ]);
+
+      setDetailService(detailResponse.data ?? null);
+      setParts(partsResponse.data?.parts ?? []);
+      setPartsSubtotal(partsResponse.data?.summary?.subtotal ?? 0);
       setCheckoutForm((prev) => ({
         ...prev,
-        service_fee: response.data?.service_fee !== undefined && response.data?.service_fee !== null
-          ? String(response.data.service_fee)
+        service_fee: detailResponse.data?.service_fee !== undefined && detailResponse.data?.service_fee !== null
+          ? String(detailResponse.data.service_fee)
           : prev.service_fee,
       }));
-      await fetchParts(serviceId);
-      await fetchSummary(serviceId);
-      await fetchInventoryItems();
     } catch (err: any) {
       setDetailService(null);
       setDetailError(err?.response?.data?.message || 'Gagal memuat detail service.');
@@ -346,7 +330,6 @@ const ServicePage = () => {
       setDetailService(response.data?.service_job ?? detailService);
       await refresh();
       await fetchParts(detailService.id);
-      await fetchSummary(detailService.id);
     } catch (err: any) {
       const payload = err?.response?.data;
       const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
@@ -467,6 +450,11 @@ const ServicePage = () => {
         setPartForm={setPartForm}
         productOptions={productOptions}
         inventoryLoading={inventoryLoading}
+        onProductFocus={() => {
+          if (inventoryItems.length === 0 && !inventoryLoading) {
+            fetchInventoryItems();
+          }
+        }}
         isPartSubmitting={isPartSubmitting}
         partSubmitError={partSubmitError}
         onAddPart={handleAddPart}

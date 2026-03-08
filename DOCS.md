@@ -17,6 +17,9 @@
   - `ServiceTable`, `ServiceAddModal`, `ServiceDetailModal` live in `src/components/service/`.
   - shared UI state types extracted to `src/types/serviceUI.ts`.
 - inventory page now fully integrated with `/inventory` API for list + stock adjustments.
+- performance optimizations:
+  - sparepart inventory list is lazy-loaded on focus to keep detail modal light.
+  - service detail and parts are fetched in parallel when opening the modal.
 
 ## Backend
 - added phone marketplace endpoints (`GET /phones`, `POST /phones`, `PATCH /phones/{id}/sold`, `/phones/statuses`). Implementation in `ListingPhoneService` supports search/status filters and pagination.
@@ -28,6 +31,9 @@
   - `StoreServiceJobRequest` validates `estimated_fee`.
   - `ServiceJobService` stores `estimated_fee` on create.
   - `ServiceJob` casts `estimated_fee` to decimal.
+- added short-lived caching (15s) for frequently hit reads:
+  - `ServiceJobService@show`, `ServiceJobPartService@listParts`, `InventoryService@list`.
+  - cache invalidated on status updates, part mutations, checkout, and stock adjustments.
 
 ## Next Steps (if needed)
 1. Wire `PhoneMarketplace` detail modal (images/status updates) once upload APIs exist.

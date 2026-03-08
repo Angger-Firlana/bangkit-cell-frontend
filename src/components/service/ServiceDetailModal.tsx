@@ -23,6 +23,7 @@ interface ServiceDetailModalProps {
   setPartForm: React.Dispatch<React.SetStateAction<PartFormState>>;
   productOptions: { label: string; value: string | number }[];
   inventoryLoading: boolean;
+  onProductFocus: () => void;
   isPartSubmitting: boolean;
   partSubmitError: string;
   onAddPart: () => void;
@@ -56,6 +57,7 @@ const ServiceDetailModal = ({
   setPartForm,
   productOptions,
   inventoryLoading,
+  onProductFocus,
   isPartSubmitting,
   partSubmitError,
   onAddPart,
@@ -187,8 +189,9 @@ const ServiceDetailModal = ({
                       ...prev,
                       product_id: e.target.value,
                       price: defaultPrice !== undefined ? String(defaultPrice) : prev.price,
-                    }));
-                  }}
+                      }));
+                    }}
+                  onFocus={onProductFocus}
                   disabled={inventoryLoading}
                 />
                 <Input
