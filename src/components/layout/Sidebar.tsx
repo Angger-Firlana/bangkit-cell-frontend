@@ -7,6 +7,7 @@ import {
   Package, 
   History,
   FileText, 
+  Database,
   Settings, 
   LogOut,
   Zap,
@@ -37,6 +38,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { name: 'Stok Sparepart', href: '/inventory', icon: Package },
     { name: 'Riwayat', href: '/history', icon: History },
     { name: 'Laporan', href: '/reports', icon: FileText },
+    { name: 'Master Data', href: '/master-data', icon: Database },
     { name: 'Pengaturan', href: '/settings', icon: Settings },
   ];
 

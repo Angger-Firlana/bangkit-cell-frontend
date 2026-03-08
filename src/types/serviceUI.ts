@@ -3,8 +3,6 @@ export interface ServiceJobFormState {
   customer_phone: string;
   customer_email: string;
   device_query: string;
-  device_brand_query: string;
-  device_model_query: string;
   problem_description: string;
   estimated_fee: string;
 }

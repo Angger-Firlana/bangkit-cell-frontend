@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import serviceJobService from '../services/serviceJob.service';
 import catalogService from '../services/catalog.service';
 import type { CreateServiceJobRequest, Device, ServiceJob, Status } from '../types/serviceJob';
-import type { DeviceBrand, DeviceModel } from '../types/deviceCatalog';
 import type { Paginated } from '../types/common';
 
 interface ServiceJobState {
@@ -21,8 +20,6 @@ export const useServiceJobs = () => {
   });
   const [devices, setDevices] = useState<Device[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
-  const [brands, setBrands] = useState<DeviceBrand[]>([]);
-  const [models, setModels] = useState<DeviceModel[]>([]);
   const [filters, setFilters] = useState({
     status_code: '',
     customer_query: '',
@@ -67,21 +64,15 @@ export const useServiceJobs = () => {
 
   const fetchCatalogs = useCallback(async () => {
     try {
-      const [devicesResponse, statusesResponse, brandsResponse, modelsResponse] = await Promise.all([
+      const [devicesResponse, statusesResponse] = await Promise.all([
         catalogService.getDevices(),
         catalogService.getServiceStatuses(),
-        catalogService.getDeviceBrands(),
-        catalogService.getDeviceModels(),
       ]);
       setDevices(normalizeList<Device>(devicesResponse?.data ?? devicesResponse));
       setStatuses(normalizeList<Status>(statusesResponse?.data ?? statusesResponse));
-      setBrands(normalizeList<DeviceBrand>(brandsResponse?.data ?? brandsResponse));
-      setModels(normalizeList<DeviceModel>(modelsResponse?.data ?? modelsResponse));
     } catch (error) {
       setDevices([]);
       setStatuses([]);
-      setBrands([]);
-      setModels([]);
     }
   }, []);
 
@@ -119,8 +110,6 @@ export const useServiceJobs = () => {
     error: state.error,
     devices,
     statuses,
-    brands,
-    models,
     filters,
     refresh: fetchServiceJobs,
     refreshCatalogs: fetchCatalogs,

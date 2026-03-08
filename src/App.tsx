@@ -9,6 +9,7 @@ import PhoneMarketplace from './pages/PhoneMarketplace';
 import HistoryPage from './pages/HistoryPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import MasterDataPage from './pages/MasterDataPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="phones" element={<PhoneMarketplace />} />
             <Route path="history" element={<HistoryPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="master-data" element={<MasterDataPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

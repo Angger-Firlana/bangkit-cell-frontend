@@ -7,7 +7,6 @@ import Pagination from '../components/common/Pagination';
 import { useServiceJobs } from '../hooks/useServiceJobs';
 import serviceJobService from '../services/serviceJob.service';
 import inventoryService from '../services/inventory.service';
-import catalogService from '../services/catalog.service';
 import type { ServiceJob, ServiceJobPart } from '../types/serviceJob';
 import {
   buildServiceReceipt,
@@ -24,15 +23,13 @@ import ServiceDetailModal from '../components/service/ServiceDetailModal';
 import type { CheckoutFormState, PartFormState, ServiceJobFormState } from '../types/serviceUI';
 
 const ServicePage = () => {
-  const { serviceJobs, devices, statuses, brands, models, pagination, isLoading, error, createServiceJob, updateFilters, filters, setPage, refresh, refreshCatalogs } = useServiceJobs();
+  const { serviceJobs, devices, statuses, pagination, isLoading, error, createServiceJob, updateFilters, filters, setPage, refresh } = useServiceJobs();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [form, setForm] = useState<ServiceJobFormState>({
     customer_name: '',
     customer_phone: '',
     customer_email: '',
     device_query: '',
-    device_brand_query: '',
-    device_model_query: '',
     problem_description: '',
     estimated_fee: '',
   });
@@ -113,12 +110,6 @@ const ServicePage = () => {
     return Math.max(0, subtotal + computedServiceFee - computedDiscount + computedTax);
   }, [partsSubtotal, computedServiceFee, computedDiscount, computedTax]);
 
-  const resolveByName = <T extends { name: string }>(items: T[], name: string) => {
-    const normalized = name.trim().toLowerCase();
-    if (!normalized) return null;
-    return items.find((item) => item.name.toLowerCase() === normalized) ?? null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -134,40 +125,10 @@ const ServicePage = () => {
       const normalizedQuery = deviceName.toLowerCase();
       const exactMatch = devices.find((device) => device.name.toLowerCase() === normalizedQuery);
       const partialMatches = devices.filter((device) => device.name.toLowerCase().includes(normalizedQuery));
-      let deviceId = exactMatch?.id ?? (partialMatches.length === 1 ? partialMatches[0].id : null);
+      const deviceId = exactMatch?.id ?? (partialMatches.length === 1 ? partialMatches[0].id : null);
 
       if (!deviceId) {
-        const brand = resolveByName(brands, form.device_brand_query);
-        const model = resolveByName(models, form.device_model_query);
-
-        if (!brand || !model) {
-          setSubmitError('Brand dan model wajib diisi saat perangkat belum terdaftar.');
-          setIsSubmitting(false);
-          return;
-        }
-
-        try {
-          const response = await catalogService.createDevice({
-            name: deviceName,
-            brand_id: brand.id,
-            level_device_id: model.id,
-          });
-          const created = response.data?.device ?? response.data;
-          deviceId = created?.id ?? null;
-          if (deviceId) {
-            await refreshCatalogs();
-          }
-        } catch (err: any) {
-          const payload = err?.response?.data;
-          const errorList = payload?.errors ? Object.values(payload.errors).flat() : [];
-          setSubmitError((errorList?.[0] as string) || payload?.message || 'Gagal membuat perangkat baru.');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      if (!deviceId) {
-        setSubmitError('Perangkat tidak ditemukan dan gagal dibuat. Coba nama lain atau tambahkan di Master Data.');
+        setSubmitError('Perangkat tidak ditemukan. Tambahkan di Master Data terlebih dahulu.');
         setIsSubmitting(false);
         return;
       }
@@ -186,8 +147,6 @@ const ServicePage = () => {
         customer_phone: '',
         customer_email: '',
         device_query: '',
-        device_brand_query: '',
-        device_model_query: '',
         problem_description: '',
         estimated_fee: '',
       });
@@ -476,8 +435,6 @@ const ServicePage = () => {
         form={form}
         setForm={setForm}
         devices={devices}
-        brands={brands}
-        models={models}
       />
 
       <ServiceDetailModal
