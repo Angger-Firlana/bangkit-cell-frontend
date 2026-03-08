@@ -6,6 +6,7 @@ import ServicePage from './pages/ServicePage';
 import POSPage from './pages/POSPage';
 import InventoryPage from './pages/InventoryPage';
 import PhoneMarketplace from './pages/PhoneMarketplace';
+import HistoryPage from './pages/HistoryPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
@@ -24,6 +25,7 @@ function App() {
             <Route path="pos" element={<POSPage />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="phones" element={<PhoneMarketplace />} />
+            <Route path="history" element={<HistoryPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

@@ -5,6 +5,7 @@ import {
   ShoppingCart, 
   Repeat, 
   Package, 
+  History,
   FileText, 
   Settings, 
   LogOut,
@@ -25,6 +26,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { name: 'Penjualan', href: '/pos', icon: ShoppingCart },
     { name: 'HP Second', href: '/phones', icon: Repeat },
     { name: 'Stok Sparepart', href: '/inventory', icon: Package },
+    { name: 'Riwayat', href: '/history', icon: History },
     { name: 'Laporan', href: '/reports', icon: FileText },
     { name: 'Pengaturan', href: '/settings', icon: Settings },
   ];

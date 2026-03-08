@@ -23,6 +23,11 @@
 - dashboard updates:
   - recent service activity now shows device, customer, phone, problem, estimate, and status badge.
   - activity items open a lightweight detail modal.
+- added History page (`/history`) with large, simple tabs for:
+  - penjualan (transactions)
+  - HP second (sold units with image)
+  - sparepart (transaction detail items)
+  - service HP (service jobs)
 
 ## UI & UX Overhaul (March 2026)
 - **Modernized Aesthetics:**
