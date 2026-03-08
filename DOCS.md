@@ -16,6 +16,11 @@
 - refactored `ServicePage` into smaller components:
   - `ServiceTable`, `ServiceAddModal`, `ServiceDetailModal` live in `src/components/service/`.
   - shared UI state types extracted to `src/types/serviceUI.ts`.
+- master data device management:
+  - device input now supports free-text with catalog matching.
+  - if device is missing, brand + model are required to create a new device entry.
+  - `Settings` page now supports CRUD for brand, model, and device catalogs.
+  - delete protections prevent removing brands/models that are still referenced.
 - inventory page now fully integrated with `/inventory` API for list + stock adjustments.
 - performance optimizations:
   - sparepart inventory list is lazy-loaded on focus to keep detail modal light.
