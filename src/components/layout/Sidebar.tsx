@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Smartphone, 
@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -20,6 +21,14 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleSignOut = () => {
+    logout();
+    onClose?.();
+    navigate('/login', { replace: true });
+  };
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Service HP', href: '/service', icon: Smartphone },
@@ -82,7 +91,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       </nav>
 
       <div className="p-4 mt-auto">
-        <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all duration-300">
+        <button
+          onClick={handleSignOut}
+          className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all duration-300"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
         </button>
