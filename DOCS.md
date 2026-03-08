@@ -18,8 +18,9 @@
   - shared UI state types extracted to `src/types/serviceUI.ts`.
 - master data device management:
   - device input now supports free-text with catalog matching.
-  - if device is missing, brand + model are required to create a new device entry.
-  - `Settings` page now supports CRUD for brand, model, and device catalogs.
+  - if device is missing, users are directed to Master Data first.
+  - Master Data is available as a dedicated page (`/master-data`) and a panel inside `Settings`.
+  - supports CRUD for brand, model, and device catalogs.
   - delete protections prevent removing brands/models that are still referenced.
 - inventory page now fully integrated with `/inventory` API for list + stock adjustments.
 - performance optimizations:
