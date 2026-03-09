@@ -20,6 +20,10 @@
   - device input now supports free-text with catalog matching.
   - if device is missing, users are directed to Master Data first.
   - Master Data is available as a dedicated page (`/master-data`) and a panel inside `Settings`.
+  - **New in March 2026:**
+    - **Tabbed Interface:** Catalogs are now split into clean, navigable tabs for **Brand**, **Model**, and **Device**.
+    - **Pagination Support:** All master data lists now include pagination (8 items per page) to ensure smooth performance even with large catalogs.
+    - **Enhanced UI:** Added status icons, usage counters, and optimized the layout width (`max-w-5xl`) for better table visibility.
   - supports CRUD for brand, model, and device catalogs.
   - delete protections prevent removing brands/models that are still referenced.
   - master data lists now render as table-style rows on desktop, with cards on mobile.
