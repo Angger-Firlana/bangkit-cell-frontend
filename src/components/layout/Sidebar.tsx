@@ -10,11 +10,11 @@ import {
   Database,
   Settings, 
   LogOut,
-  Zap,
   X
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '../../stores/useAuthStore';
+import LogoMark from '../brand/LogoMark';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       <div className="p-6 mb-2 flex items-center justify-between">
         <div className="flex items-center space-x-3 group cursor-pointer">
           <div className="bg-primary p-2 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
-            <Zap className="h-5 w-5 text-white fill-white" />
+            <LogoMark className="h-5 w-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight">BANGKIT<span className="text-primary">CELL</span></h1>

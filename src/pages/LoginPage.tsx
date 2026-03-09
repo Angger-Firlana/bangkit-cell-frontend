@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import authService from '../services/auth.service';
 import { useAuthStore, type AuthState } from '../stores/useAuthStore';
+import LogoMark from '../components/brand/LogoMark';
 
 const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
@@ -42,7 +43,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-200 mb-4">
-            <Smartphone className="h-8 w-8" />
+            <LogoMark className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">BangkitCell</h1>
           <p className="text-slate-500 font-medium">Sistem Manajemen Toko & Service HP</p>
