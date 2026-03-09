@@ -8,7 +8,7 @@ const MasterDataPage = () => {
         title="Master Data"
         subtitle="Kelola brand, model, dan device."
       />
-      <div className="max-w-3xl">
+      <div className="max-w-5xl">
         <MasterDataPanel />
       </div>
     </div>
