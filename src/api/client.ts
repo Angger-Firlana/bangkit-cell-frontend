@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/useAuthStore';
 
 const apiClient = axios.create({
@@ -10,10 +10,11 @@ const apiClient = axios.create({
 });
 
 // Interceptor for Authorization Token
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().token;
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    // Axios headers typing varies by version (AxiosHeaders vs plain object).
+    (config.headers as any).Authorization = `Bearer ${token}`;
   }
   return config;
 });
