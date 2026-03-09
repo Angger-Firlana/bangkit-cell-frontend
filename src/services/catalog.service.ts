@@ -15,47 +15,47 @@ const catalogService = {
   },
 
   getDeviceBrands: async (): Promise<ApiResponse<DeviceBrand[]>> => {
-    const response = await apiClient.get('/services/device-brands');
+    const response = await apiClient.get('/master/brands');
     return response.data;
   },
 
   createDeviceBrand: async (payload: { name: string }): Promise<ApiResponse<{ brand: DeviceBrand } | DeviceBrand>> => {
-    const response = await apiClient.post('/services/device-brands', payload);
+    const response = await apiClient.post('/master/brands', payload);
     return response.data;
   },
 
   updateDeviceBrand: async (id: number, payload: { name: string }): Promise<ApiResponse<{ brand: DeviceBrand } | DeviceBrand>> => {
-    const response = await apiClient.patch(`/services/device-brands/${id}`, payload);
+    const response = await apiClient.put(`/master/brands/${id}`, payload);
     return response.data;
   },
 
   deleteDeviceBrand: async (id: number): Promise<ApiResponse<unknown>> => {
-    const response = await apiClient.delete(`/services/device-brands/${id}`);
+    const response = await apiClient.delete(`/master/brands/${id}`);
     return response.data;
   },
 
   getDeviceModels: async (): Promise<ApiResponse<DeviceModel[]>> => {
-    const response = await apiClient.get('/services/device-models');
+    const response = await apiClient.get('/master/level-devices');
     return response.data;
   },
 
-  createDeviceModel: async (payload: { name: string; brand_id: number }): Promise<ApiResponse<{ model: DeviceModel } | DeviceModel>> => {
-    const response = await apiClient.post('/services/device-models', payload);
+  createDeviceModel: async (payload: { name: string }): Promise<ApiResponse<{ model: DeviceModel } | DeviceModel>> => {
+    const response = await apiClient.post('/master/level-devices', payload);
     return response.data;
   },
 
-  updateDeviceModel: async (id: number, payload: { name: string; brand_id: number }): Promise<ApiResponse<{ model: DeviceModel } | DeviceModel>> => {
-    const response = await apiClient.patch(`/services/device-models/${id}`, payload);
+  updateDeviceModel: async (id: number, payload: { name: string }): Promise<ApiResponse<{ model: DeviceModel } | DeviceModel>> => {
+    const response = await apiClient.put(`/master/level-devices/${id}`, payload);
     return response.data;
   },
 
   deleteDeviceModel: async (id: number): Promise<ApiResponse<unknown>> => {
-    const response = await apiClient.delete(`/services/device-models/${id}`);
+    const response = await apiClient.delete(`/master/level-devices/${id}`);
     return response.data;
   },
 
   updateDevice: async (id: number, payload: { name: string; brand_id: number; level_device_id: number }): Promise<ApiResponse<{ device: Device } | Device>> => {
-    const response = await apiClient.patch(`/services/devices/${id}`, payload);
+    const response = await apiClient.put(`/services/devices/${id}`, payload);
     return response.data;
   },
 

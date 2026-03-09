@@ -16,7 +16,6 @@ const MasterDataPanel = () => {
 
   const [brandName, setBrandName] = useState('');
   const [modelName, setModelName] = useState('');
-  const [modelBrandQuery, setModelBrandQuery] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const [deviceBrandQuery, setDeviceBrandQuery] = useState('');
   const [deviceModelQuery, setDeviceModelQuery] = useState('');
@@ -24,7 +23,6 @@ const MasterDataPanel = () => {
   const [editingBrandName, setEditingBrandName] = useState('');
   const [editingModelId, setEditingModelId] = useState<number | null>(null);
   const [editingModelName, setEditingModelName] = useState('');
-  const [editingModelBrandQuery, setEditingModelBrandQuery] = useState('');
   const [editingDeviceId, setEditingDeviceId] = useState<number | null>(null);
   const [editingDeviceName, setEditingDeviceName] = useState('');
   const [editingDeviceBrandQuery, setEditingDeviceBrandQuery] = useState('');
@@ -61,20 +59,14 @@ const MasterDataPanel = () => {
   }, [models]);
 
   const brandUsage = useMemo(() => {
-    const map = new Map<number, { modelCount: number; deviceCount: number }>();
-    brands.forEach((brand) => map.set(brand.id, { modelCount: 0, deviceCount: 0 }));
-    models.forEach((model) => {
-      const entry = map.get(model.brand_id) ?? { modelCount: 0, deviceCount: 0 };
-      entry.modelCount += 1;
-      map.set(model.brand_id, entry);
-    });
+    const map = new Map<number, number>();
+    brands.forEach((brand) => map.set(brand.id, 0));
     devices.forEach((device) => {
-      const entry = map.get(device.brand_id) ?? { modelCount: 0, deviceCount: 0 };
-      entry.deviceCount += 1;
-      map.set(device.brand_id, entry);
+      const current = map.get(device.brand_id) ?? 0;
+      map.set(device.brand_id, current + 1);
     });
     return map;
-  }, [brands, models, devices]);
+  }, [brands, devices]);
 
   const modelUsage = useMemo(() => {
     const map = new Map<number, number>();
@@ -95,11 +87,8 @@ const MasterDataPanel = () => {
   const filteredModels = useMemo(() => {
     const query = modelSearch.trim().toLowerCase();
     if (!query) return models;
-    return models.filter((model) => {
-      const brandName = brandMap.get(model.brand_id) ?? '';
-      return model.name.toLowerCase().includes(query) || brandName.toLowerCase().includes(query);
-    });
-  }, [models, modelSearch, brandMap]);
+    return models.filter((model) => model.name.toLowerCase().includes(query));
+  }, [models, modelSearch]);
 
   const filteredDevices = useMemo(() => {
     const query = deviceSearch.trim().toLowerCase();
@@ -158,16 +147,10 @@ const MasterDataPanel = () => {
       setMasterError('Nama model wajib diisi.');
       return;
     }
-    const brand = resolveByName(brands, modelBrandQuery);
-    if (!brand) {
-      setMasterError('Brand tidak ditemukan. Ketik brand yang sudah ada.');
-      return;
-    }
     setMasterError('');
     try {
-      await catalogService.createDeviceModel({ name, brand_id: brand.id });
+      await catalogService.createDeviceModel({ name });
       setModelName('');
-      setModelBrandQuery('');
       await fetchMasterData();
     } catch (err: any) {
       const payload = err?.response?.data;
@@ -229,8 +212,8 @@ const MasterDataPanel = () => {
 
   const handleDeleteBrand = async (brand: DeviceBrand) => {
     const usage = brandUsage.get(brand.id);
-    if ((usage?.modelCount ?? 0) > 0 || (usage?.deviceCount ?? 0) > 0) {
-      setMasterError('Brand tidak bisa dihapus karena masih dipakai oleh model atau device.');
+    if ((usage ?? 0) > 0) {
+      setMasterError('Brand tidak bisa dihapus karena masih dipakai oleh device.');
       return;
     }
     if (!window.confirm(`Hapus brand ${brand.name}?`)) return;
@@ -248,8 +231,6 @@ const MasterDataPanel = () => {
   const handleEditModel = (model: DeviceModel) => {
     setEditingModelId(model.id);
     setEditingModelName(model.name);
-    const brandName = brandMap.get(model.brand_id) ?? '';
-    setEditingModelBrandQuery(brandName);
   };
 
   const handleUpdateModel = async () => {
@@ -259,17 +240,11 @@ const MasterDataPanel = () => {
       setMasterError('Nama model wajib diisi.');
       return;
     }
-    const brand = resolveByName(brands, editingModelBrandQuery);
-    if (!brand) {
-      setMasterError('Brand tidak ditemukan. Ketik brand yang sudah ada.');
-      return;
-    }
     setMasterError('');
     try {
-      await catalogService.updateDeviceModel(editingModelId, { name, brand_id: brand.id });
+      await catalogService.updateDeviceModel(editingModelId, { name });
       setEditingModelId(null);
       setEditingModelName('');
-      setEditingModelBrandQuery('');
       await fetchMasterData();
     } catch (err: any) {
       const payload = err?.response?.data;
@@ -426,7 +401,7 @@ const MasterDataPanel = () => {
                     <div>
                       <p className="text-sm font-semibold text-slate-700">{brand.name}</p>
                       <p className="text-[10px] font-medium text-slate-400">
-                        ID {brand.id} - {brandUsage.get(brand.id)?.modelCount ?? 0} model - {brandUsage.get(brand.id)?.deviceCount ?? 0} device
+                        ID {brand.id} - {brandUsage.get(brand.id) ?? 0} device
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -437,7 +412,7 @@ const MasterDataPanel = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDeleteBrand(brand)}
-                        disabled={(brandUsage.get(brand.id)?.modelCount ?? 0) > 0 || (brandUsage.get(brand.id)?.deviceCount ?? 0) > 0}
+                        disabled={(brandUsage.get(brand.id) ?? 0) > 0}
                       >
                         Hapus
                       </Button>
@@ -456,17 +431,6 @@ const MasterDataPanel = () => {
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
           />
-          <Input
-            placeholder="Brand model (ketik brand yang sudah ada)"
-            value={modelBrandQuery}
-            onChange={(e) => setModelBrandQuery(e.target.value)}
-            list="brand-options"
-          />
-          <datalist id="brand-options">
-            {brands.map((brand) => (
-              <option key={brand.id} value={brand.name} />
-            ))}
-          </datalist>
           <Button
             size="sm"
             variant="secondary"
@@ -476,7 +440,7 @@ const MasterDataPanel = () => {
             Tambah Model
           </Button>
           <Input
-            placeholder="Cari model atau brand..."
+            placeholder="Cari model..."
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
           />
@@ -490,41 +454,35 @@ const MasterDataPanel = () => {
                 className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
               >
                 {editingModelId === model.id ? (
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      value={editingModelName}
-                      onChange={(e) => setEditingModelName(e.target.value)}
-                    />
-                    <Input
-                      value={editingModelBrandQuery}
-                      onChange={(e) => setEditingModelBrandQuery(e.target.value)}
-                      list="brand-options"
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={handleUpdateModel}>
-                        Simpan
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingModelId(null);
-                          setEditingModelName('');
-                          setEditingModelBrandQuery('');
-                        }}
-                      >
-                        Batal
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">{model.name}</p>
-                      <p className="text-[10px] font-medium text-slate-400">
-                        {brandMap.get(model.brand_id) ?? 'Unknown'} - ID {model.id} - Dipakai {modelUsage.get(model.id) ?? 0}
-                      </p>
-                    </div>
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={editingModelName}
+                          onChange={(e) => setEditingModelName(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={handleUpdateModel}>
+                            Simpan
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingModelId(null);
+                              setEditingModelName('');
+                            }}
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{model.name}</p>
+                          <p className="text-[10px] font-medium text-slate-400">
+                            ID {model.id} - Dipakai {modelUsage.get(model.id) ?? 0}
+                          </p>
+                        </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => handleEditModel(model)}>
                         Edit

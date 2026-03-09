@@ -6,5 +6,4 @@ export interface DeviceBrand {
 export interface DeviceModel {
   id: number;
   name: string;
-  brand_id: number;
 }
