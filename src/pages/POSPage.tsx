@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Search, ShoppingCart, Plus, Minus, CreditCard, X, ChevronUp } from 'lucide-react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { Search, ShoppingCart, Plus, Minus, CreditCard, X, ChevronUp, Printer } from 'lucide-react';
 import { usePOS } from '../hooks/usePOS';
 import { formatCurrency } from '../utils/format';
 import EmptyState from '../components/common/EmptyState';
@@ -7,6 +7,13 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input, Select } from '../components/ui/Input';
 import clsx from 'clsx';
+import {
+  buildTransactionReceipt,
+  connectBluetoothPrinter,
+  printBluetoothText,
+  type BluetoothPrinterConnection,
+} from '../utils/bluetoothPrinter';
+import type { Transaction } from '../types/pos';
 
 const POSPage = () => {
   const { products, cart, paymentMethods, total, isLoading, error, addToCart, updateQty, checkout } = usePOS();
@@ -16,6 +23,10 @@ const POSPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [printerError, setPrinterError] = useState('');
+  const [printerStatus, setPrinterStatus] = useState<'idle' | 'connecting' | 'connected' | 'printing'>('idle');
+  const printerRef = useRef<BluetoothPrinterConnection | null>(null);
+  const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (paymentMethods.length > 0 && paymentMethodId === null) {
@@ -34,16 +45,39 @@ const POSPage = () => {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      await checkout({
+      const response = await checkout({
         payment_method_id: paymentMethodId,
         paid_amount: Number(paidAmount || total),
       });
+      setLastTransaction(response.data ?? null);
       setPaidAmount('');
       setIsCartOpen(false);
     } catch (err: any) {
       setSubmitError(err?.response?.data?.message || 'Gagal memproses transaksi.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePrintTerminal = async () => {
+    if (!lastTransaction) {
+      setPrinterError('Belum ada transaksi yang bisa dicetak.');
+      return;
+    }
+    setPrinterError('');
+    try {
+      if (!printerRef.current) {
+        setPrinterStatus('connecting');
+        printerRef.current = await connectBluetoothPrinter();
+        setPrinterStatus('connected');
+      }
+      setPrinterStatus('printing');
+      const receipt = buildTransactionReceipt(lastTransaction);
+      await printBluetoothText(printerRef.current, receipt);
+      setPrinterStatus('connected');
+    } catch (err: any) {
+      setPrinterStatus('idle');
+      setPrinterError(err?.message || 'Gagal mengirim data ke printer.');
     }
   };
 
@@ -160,6 +194,11 @@ const POSPage = () => {
               {submitError}
             </div>
           )}
+          {printerError && (
+            <div className="text-[10px] font-bold text-rose-600 bg-rose-100/50 border border-rose-100 p-2.5 rounded-xl uppercase tracking-wider text-center">
+              {printerError}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-3">
             <Select
               label="Pembayaran"
@@ -177,6 +216,10 @@ const POSPage = () => {
               className="bg-white"
             />
           </div>
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <span>Status Printer</span>
+            <span>{printerStatus === 'connected' ? 'Terhubung' : 'Belum Terhubung'}</span>
+          </div>
           <div className="pt-2 flex justify-between items-end">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Tagihan</span>
             <span className="text-xl font-bold text-slate-800 tracking-tight">{formatCurrency(total)}</span>
@@ -190,6 +233,22 @@ const POSPage = () => {
           >
             Selesaikan Bayar
           </Button>
+          <Button
+            onClick={handlePrintTerminal}
+            disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
+            className="w-full"
+            variant="outline"
+            leftIcon={<Printer className="h-4 w-4" />}
+          >
+            {printerStatus === 'connecting'
+              ? 'Menghubungkan Printer...'
+              : printerStatus === 'printing'
+              ? 'Mencetak...'
+              : 'Print Terminal'}
+          </Button>
+          <p className="text-[10px] font-medium text-slate-400 text-center">
+            Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.
+          </p>
         </div>
       </div>
 
@@ -256,6 +315,11 @@ const POSPage = () => {
               </div>
 
               <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
+                {printerError && (
+                  <div className="text-[10px] font-bold text-rose-600 bg-rose-100/50 border border-rose-100 p-2.5 rounded-xl uppercase tracking-wider text-center">
+                    {printerError}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <Select
                     label="Metode"
@@ -271,6 +335,10 @@ const POSPage = () => {
                     placeholder={String(total)}
                   />
                 </div>
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <span>Status Printer</span>
+                  <span>{printerStatus === 'connected' ? 'Terhubung' : 'Belum Terhubung'}</span>
+                </div>
                 <Button
                   onClick={handleCheckout}
                   disabled={cart.length === 0 || isSubmitting || paymentMethodId === null}
@@ -280,6 +348,22 @@ const POSPage = () => {
                 >
                   Bayar & Selesaikan
                 </Button>
+                <Button
+                  onClick={handlePrintTerminal}
+                  disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
+                  className="w-full"
+                  variant="outline"
+                  leftIcon={<Printer className="h-5 w-5" />}
+                >
+                  {printerStatus === 'connecting'
+                    ? 'Menghubungkan Printer...'
+                    : printerStatus === 'printing'
+                    ? 'Mencetak...'
+                    : 'Print Terminal'}
+                </Button>
+                <p className="text-[10px] font-medium text-slate-400 text-center">
+                  Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.
+                </p>
               </div>
             </div>
           )}

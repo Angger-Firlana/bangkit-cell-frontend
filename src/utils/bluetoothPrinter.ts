@@ -1,5 +1,6 @@
 import type { ServiceJob } from '../types/serviceJob';
 import { formatCurrency, formatDateTime } from './format';
+import type { Transaction } from '../types/pos';  
 
 export type BluetoothPrinterConnection = {
   device: any;
@@ -59,7 +60,10 @@ const findCharacteristicByUuid = async (
 
 export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnection> => {
   if (!(navigator as any).bluetooth) {
-    throw new Error('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge di desktop.');
+    throw new Error('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge (Android atau desktop).');
+  }
+  if (!window.isSecureContext) {
+    throw new Error('Web Bluetooth butuh HTTPS (kecuali localhost). Pastikan aplikasi di-host via HTTPS.');
   }
 
   const device = await (navigator as any).bluetooth.requestDevice({
@@ -151,6 +155,44 @@ export const buildServiceReceipt = (service: ServiceJob, shopName = 'Bangkit Cel
     '==============================',
     'Terima kasih.',
   ];
+
+  return `${init}${lines.join('\n')}\n\n\n${cut}`;
+};
+
+export const buildTransactionReceipt = (transaction: Transaction, shopName = 'Bangkit Cell') => {
+  const esc = '\x1B';
+  const gs = '\x1D';
+  const init = `${esc}@`;
+  const cut = `${gs}V\x00`;
+
+  const trxId = `TRX-${transaction.id}`;
+  const trxDate = formatDateTime(transaction.transaction_date);
+  const customerName = transaction.customer?.full_name ?? '-';
+  const paymentMethod = transaction.payment_method?.name ?? '-';
+  const lines = [
+    shopName,
+    '==============================',
+    `ID: ${trxId}`,
+    `Tanggal: ${trxDate}`,
+    '------------------------------',
+    `Pelanggan: ${customerName}`,
+    `Metode: ${paymentMethod}`,
+    '------------------------------',
+    'Item:',
+  ];
+
+  (transaction.transaction_details ?? []).forEach((detail) => {
+    const name = detail.item?.name ?? 'Produk';
+    lines.push(`${name}`);
+    lines.push(`  x${detail.qty} = ${formatCurrency(Number(detail.total_price))}`);
+  });
+
+  lines.push('------------------------------');
+  lines.push(`Total: ${formatCurrency(Number(transaction.grand_total))}`);
+  lines.push(`Bayar: ${formatCurrency(Number(transaction.paid_amount))}`);
+  lines.push(`Kembali: ${formatCurrency(Number(transaction.change_amount))}`);
+  lines.push('==============================');
+  lines.push('Terima kasih.');
 
   return `${init}${lines.join('\n')}\n\n\n${cut}`;
 };
