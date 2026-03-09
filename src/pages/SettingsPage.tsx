@@ -2,8 +2,12 @@ import { Save } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
 import { Card } from '../components/ui/Card';
 import MasterDataPanel from '../components/settings/MasterDataPanel';
+import { Button } from '../components/ui/Button';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 
 const SettingsPage = () => {
+  const { canInstall, installed, install } = usePwaInstall();
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -63,7 +67,41 @@ const SettingsPage = () => {
           </div>
         </Card>
 
-        <MasterDataPanel />
+        <div className="space-y-6">
+          <MasterDataPanel />
+
+          <Card
+            title="Aplikasi Mobile (PWA)"
+            subtitle="Install di HP agar terasa seperti aplikasi."
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    Status: {installed ? 'Terpasang' : canInstall ? 'Siap di-install' : 'Belum tersedia'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Android: buka via Chrome lalu gunakan tombol Install. iPhone: biasanya lewat Share → Add to Home Screen.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => install()}
+                  disabled={!canInstall || installed}
+                  variant={canInstall && !installed ? 'secondary' : 'outline'}
+                >
+                  Install
+                </Button>
+              </div>
+
+              <div className="text-xs text-slate-500 leading-relaxed">
+                <p className="font-semibold text-slate-700">Catatan Bluetooth</p>
+                <p>
+                  Web Bluetooth untuk printer biasanya bekerja di Chrome/Edge Android atau desktop, dan butuh HTTPS (kecuali localhost).
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
