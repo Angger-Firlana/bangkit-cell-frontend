@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BangkitCell (Maskable)">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- Full-bleed background for maskable icons -->
+  <rect x="0" y="0" width="512" height="512" fill="url(#bg)"/>
+
+  <!-- Keep the mark inside safe area -->
+  <g filter="url(#shadow)" transform="translate(0 0)">
+    <rect x="160" y="128" width="192" height="300" rx="48" fill="none" stroke="#ffffff" stroke-width="18" stroke-linejoin="round"/>
+    <circle cx="256" cy="168" r="10" fill="#ffffff" opacity="0.92"/>
+    <circle cx="256" cy="396" r="11" fill="#ffffff" opacity="0.92"/>
+    <path d="M278 196 214 292h52l-18 112 82-124h-52l18-84z" fill="#fbbf24"/>
+  </g>
+</svg>
+
