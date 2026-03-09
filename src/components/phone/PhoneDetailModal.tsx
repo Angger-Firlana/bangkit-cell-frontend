@@ -49,7 +49,10 @@ const PhoneDetailModal = ({
             )}
             
             <div className="absolute top-4 left-4">
-              <StatusPill status={phone.status} />
+              <StatusPill
+                label={phone.status?.name ?? phone.status?.code ?? (isSold ? 'Terjual' : 'Tersedia')}
+                tone={isSold ? 'success' : 'info'}
+              />
             </div>
             
             {isSold && (
