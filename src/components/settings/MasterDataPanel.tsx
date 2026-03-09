@@ -365,14 +365,78 @@ const MasterDataPanel = () => {
             value={brandSearch}
             onChange={(e) => setBrandSearch(e.target.value)}
           />
-          <div className="space-y-2">
+          <div className="hidden md:block">
+            <div className="grid grid-cols-[2fr_1fr_auto] px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <span>Brand</span>
+              <span>Info</span>
+              <span className="text-right">Aksi</span>
+            </div>
+            <div className="space-y-2">
+              {filteredBrands.length === 0 && (
+                <div className="px-4 py-3 text-xs text-slate-400">Belum ada brand.</div>
+              )}
+              {filteredBrands.map((brand) => (
+                <div
+                  key={brand.id}
+                  className="grid grid-cols-[2fr_1fr_auto] items-center px-4 py-3 bg-white border border-slate-100 rounded-2xl"
+                >
+                  {editingBrandId === brand.id ? (
+                    <div className="col-span-3 space-y-2">
+                      <Input
+                        value={editingBrandName}
+                        onChange={(e) => setEditingBrandName(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={handleUpdateBrand}>
+                          Simpan
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingBrandId(null);
+                            setEditingBrandName('');
+                          }}
+                        >
+                          Batal
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">{brand.name}</p>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        ID {brand.id} - {brandUsage.get(brand.id) ?? 0} device
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => handleEditBrand(brand)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteBrand(brand)}
+                          disabled={(brandUsage.get(brand.id) ?? 0) > 0}
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2 md:hidden">
             {filteredBrands.length === 0 && (
               <span className="text-xs text-slate-400">Belum ada brand.</span>
             )}
             {filteredBrands.map((brand) => (
               <div
                 key={brand.id}
-                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
+                className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 {editingBrandId === brand.id ? (
                   <div className="flex-1 space-y-2">
@@ -399,8 +463,8 @@ const MasterDataPanel = () => {
                 ) : (
                   <>
                     <div>
-                      <p className="text-sm font-semibold text-slate-700">{brand.name}</p>
-                      <p className="text-[10px] font-medium text-slate-400">
+                      <p className="text-sm font-bold text-slate-800">{brand.name}</p>
+                      <p className="text-xs text-slate-500">
                         ID {brand.id} - {brandUsage.get(brand.id) ?? 0} device
                       </p>
                     </div>
@@ -444,45 +508,109 @@ const MasterDataPanel = () => {
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
           />
-          <div className="space-y-2">
+          <div className="hidden md:block">
+            <div className="grid grid-cols-[2fr_1fr_auto] px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <span>Model</span>
+              <span>Info</span>
+              <span className="text-right">Aksi</span>
+            </div>
+            <div className="space-y-2">
+              {filteredModels.length === 0 && (
+                <div className="px-4 py-3 text-xs text-slate-400">Belum ada model.</div>
+              )}
+              {filteredModels.map((model) => (
+                <div
+                  key={model.id}
+                  className="grid grid-cols-[2fr_1fr_auto] items-center px-4 py-3 bg-white border border-slate-100 rounded-2xl"
+                >
+                  {editingModelId === model.id ? (
+                    <div className="col-span-3 space-y-2">
+                      <Input
+                        value={editingModelName}
+                        onChange={(e) => setEditingModelName(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={handleUpdateModel}>
+                          Simpan
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingModelId(null);
+                            setEditingModelName('');
+                          }}
+                        >
+                          Batal
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">{model.name}</p>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        ID {model.id} - Dipakai {modelUsage.get(model.id) ?? 0}
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => handleEditModel(model)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteModel(model)}
+                          disabled={(modelUsage.get(model.id) ?? 0) > 0}
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2 md:hidden">
             {filteredModels.length === 0 && (
               <span className="text-xs text-slate-400">Belum ada model.</span>
             )}
             {filteredModels.map((model) => (
               <div
                 key={model.id}
-                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
+                className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 {editingModelId === model.id ? (
-                      <div className="flex-1 space-y-2">
-                        <Input
-                          value={editingModelName}
-                          onChange={(e) => setEditingModelName(e.target.value)}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="secondary" onClick={handleUpdateModel}>
-                            Simpan
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingModelId(null);
-                              setEditingModelName('');
-                            }}
-                          >
-                            Batal
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">{model.name}</p>
-                          <p className="text-[10px] font-medium text-slate-400">
-                            ID {model.id} - Dipakai {modelUsage.get(model.id) ?? 0}
-                          </p>
-                        </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={editingModelName}
+                      onChange={(e) => setEditingModelName(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={handleUpdateModel}>
+                        Simpan
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingModelId(null);
+                          setEditingModelName('');
+                        }}
+                      >
+                        Batal
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{model.name}</p>
+                      <p className="text-xs text-slate-500">
+                        ID {model.id} - Dipakai {modelUsage.get(model.id) ?? 0}
+                      </p>
+                    </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => handleEditModel(model)}>
                         Edit
@@ -522,6 +650,11 @@ const MasterDataPanel = () => {
             onChange={(e) => setDeviceModelQuery(e.target.value)}
             list="model-options"
           />
+          <datalist id="brand-options">
+            {brands.map((brand) => (
+              <option key={brand.id} value={brand.name} />
+            ))}
+          </datalist>
           <datalist id="model-options">
             {models.map((model) => (
               <option key={model.id} value={model.name} />
@@ -540,7 +673,82 @@ const MasterDataPanel = () => {
             value={deviceSearch}
             onChange={(e) => setDeviceSearch(e.target.value)}
           />
-          <div className="space-y-2">
+          <div className="hidden md:block">
+            <div className="grid grid-cols-[2fr_1fr_auto] px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <span>Device</span>
+              <span>Info</span>
+              <span className="text-right">Aksi</span>
+            </div>
+            <div className="space-y-2">
+              {filteredDevices.length === 0 && (
+                <div className="px-4 py-3 text-xs text-slate-400">Belum ada device.</div>
+              )}
+              {filteredDevices.map((device) => {
+                const model = modelMap.get(device.level_device_id ?? 0);
+                return (
+                  <div
+                    key={device.id}
+                    className="grid grid-cols-[2fr_1fr_auto] items-center px-4 py-3 bg-white border border-slate-100 rounded-2xl"
+                  >
+                    {editingDeviceId === device.id ? (
+                      <div className="col-span-3 space-y-2">
+                        <Input
+                          value={editingDeviceName}
+                          onChange={(e) => setEditingDeviceName(e.target.value)}
+                        />
+                        <Input
+                          value={editingDeviceBrandQuery}
+                          onChange={(e) => setEditingDeviceBrandQuery(e.target.value)}
+                          list="brand-options"
+                        />
+                        <Input
+                          value={editingDeviceModelQuery}
+                          onChange={(e) => setEditingDeviceModelQuery(e.target.value)}
+                          list="model-options"
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={handleUpdateDevice}>
+                            Simpan
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingDeviceId(null);
+                              setEditingDeviceName('');
+                              setEditingDeviceBrandQuery('');
+                              setEditingDeviceModelQuery('');
+                            }}
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{device.name}</p>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {brandMap.get(device.brand_id) ?? 'Unknown'} - {model?.name ?? 'Unknown'}
+                        </div>
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="text-[10px] font-bold text-slate-400">ID {device.id}</span>
+                          <Button size="sm" variant="outline" onClick={() => handleEditDevice(device)}>
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDeleteDevice(device)}>
+                            Hapus
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="space-y-2 md:hidden">
             {filteredDevices.length === 0 && (
               <span className="text-xs text-slate-400">Belum ada device.</span>
             )}
@@ -549,7 +757,7 @@ const MasterDataPanel = () => {
               return (
                 <div
                   key={device.id}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
+                  className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   {editingDeviceId === device.id ? (
                     <div className="flex-1 space-y-2">
@@ -588,8 +796,8 @@ const MasterDataPanel = () => {
                   ) : (
                     <>
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">{device.name}</p>
-                        <p className="text-[10px] font-medium text-slate-400">
+                        <p className="text-sm font-bold text-slate-800">{device.name}</p>
+                        <p className="text-xs text-slate-500">
                           {brandMap.get(device.brand_id) ?? 'Unknown'} - {model?.name ?? 'Unknown'}
                         </p>
                       </div>

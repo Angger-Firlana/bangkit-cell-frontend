@@ -22,6 +22,7 @@
   - Master Data is available as a dedicated page (`/master-data`) and a panel inside `Settings`.
   - supports CRUD for brand, model, and device catalogs.
   - delete protections prevent removing brands/models that are still referenced.
+  - master data lists now render as table-style rows on desktop, with cards on mobile.
 - inventory page now fully integrated with `/inventory` API for list + stock adjustments.
 - performance optimizations:
   - sparepart inventory list is lazy-loaded on focus to keep detail modal light.
