@@ -44,7 +44,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <div className={clsx(
-      "flex flex-col w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 overflow-y-auto z-50 border-r border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0",
+      "flex flex-col w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 overflow-y-auto z-50 border-r border-slate-800 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
       <div className="p-6 mb-2 flex items-center justify-between">

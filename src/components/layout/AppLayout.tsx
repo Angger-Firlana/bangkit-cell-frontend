@@ -6,7 +6,7 @@ import Topbar from './Topbar';
 const AppLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   // Map paths to titles
   const getPageTitle = (path: string) => {
     switch (path) {
@@ -40,7 +40,7 @@ const AppLayout = () => {
           onMenuClick={() => setIsSidebarOpen(true)} 
         />
         
-        <main className="flex-1 pt-24 pb-12 px-4 sm:px-6 lg:px-8 w-full">
+        <main className="flex-1 pt-[calc(6rem+env(safe-area-inset-top))] pb-12 px-4 sm:px-6 lg:px-8 w-full">
           <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-700">
             <Outlet />
           </div>
