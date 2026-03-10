@@ -4,9 +4,17 @@ import { Card } from '../components/ui/Card';
 import MasterDataPanel from '../components/settings/MasterDataPanel';
 import { Button } from '../components/ui/Button';
 import { usePwaInstall } from '../hooks/usePwaInstall';
+import { useEffect } from 'react';
+import { useBluetoothStore } from '../stores/useBluetoothStore';
 
 const SettingsPage = () => {
   const { canInstall, installed, install } = usePwaInstall();
+  const bluetooth = useBluetoothStore();
+  const initBluetooth = useBluetoothStore((s) => s.init);
+
+  useEffect(() => {
+    initBluetooth();
+  }, [initBluetooth]);
 
   return (
     <div className="space-y-8">
@@ -100,6 +108,99 @@ const SettingsPage = () => {
                 </p>
               </div>
             </div>
+          </Card>
+
+          <Card
+            title="Bluetooth (Native Android)"
+            subtitle="Koneksi printer/device via Bluetooth klasik (SPP)."
+          >
+            {!bluetooth.isNativeAndroid ? (
+              <div className="text-sm text-slate-600">
+                Fitur ini hanya tersedia saat app dijalankan sebagai aplikasi Android (Capacitor).
+              </div>
+            ) : !bluetooth.supported ? (
+              <div className="text-sm text-slate-600">
+                Device ini tidak mendukung Bluetooth.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Status: {bluetooth.connected ? 'Terhubung' : bluetooth.connecting ? 'Menghubungkan...' : 'Belum terhubung'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                      {bluetooth.connectedAddress ? `Device: ${bluetooth.connectedAddress}` : bluetooth.enabled ? 'Bluetooth aktif' : 'Bluetooth nonaktif'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!bluetooth.enabled ? (
+                      <Button variant="secondary" onClick={() => bluetooth.requestEnable()}>
+                        Aktifkan
+                      </Button>
+                    ) : (
+                      <Button variant="outline" onClick={() => bluetooth.refreshBondedDevices()}>
+                        Refresh
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-600">Device ter-pair</label>
+                  <select
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bluetooth.selectedAddress ?? ''}
+                    onChange={(e) => bluetooth.selectDevice(e.target.value || null)}
+                    disabled={!bluetooth.enabled || bluetooth.devices.length === 0 || bluetooth.connected}
+                  >
+                    {bluetooth.devices.length === 0 ? (
+                      <option value="">
+                        {bluetooth.enabled ? 'Belum ada device (tap Refresh)' : 'Bluetooth nonaktif'}
+                      </option>
+                    ) : (
+                      bluetooth.devices.map((d) => (
+                        <option key={d.address} value={d.address}>
+                          {(d.name ?? 'Unknown')} — {d.address}
+                        </option>
+                      ))
+                    )}
+                  </select>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    {bluetooth.connected ? (
+                      <Button variant="danger" onClick={() => bluetooth.disconnect()}>
+                        Putuskan
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        onClick={() => bluetooth.connectSelected()}
+                        disabled={!bluetooth.enabled || !bluetooth.selectedAddress || bluetooth.connecting}
+                        isLoading={bluetooth.connecting}
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
+
+                  {bluetooth.lastError && (
+                    <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3 space-y-2">
+                      <div>{bluetooth.lastError}</div>
+                      {(bluetooth.lastError.toLowerCase().includes('izin') || bluetooth.lastError.toLowerCase().includes('permission')) && (
+                        <Button variant="outline" size="sm" onClick={() => bluetooth.openAppSettings()}>
+                          Buka Pengaturan Izin
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-xs text-slate-500 leading-relaxed">
+                    Pastikan device sudah pairing di pengaturan Bluetooth Android terlebih dahulu.
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>
