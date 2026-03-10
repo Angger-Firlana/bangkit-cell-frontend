@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Modal from '../ui/Modal';
 import StatusPill from '../common/StatusPill';
 import { Input, Select } from '../ui/Input';
@@ -81,6 +81,27 @@ const ServiceDetailModal = ({
   const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   const [isPrinterPickerOpen, setIsPrinterPickerOpen] = useState(false);
   const [pendingPrint, setPendingPrint] = useState(false);
+  const [partSearch, setPartSearch] = useState('');
+
+  const partSearchResults = useMemo(() => {
+    const q = partSearch.trim().toLowerCase();
+    if (!q) return [];
+    return productOptions
+      .filter((opt) => String(opt.value) !== '')
+      .filter((opt) => opt.label.toLowerCase().includes(q) || String(opt.value).toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [partSearch, productOptions]);
+
+  const handlePickPart = (value: string | number) => {
+    const productId = Number(value);
+    const defaultPrice = productPriceMap.get(productId);
+    setPartForm((prev) => ({
+      ...prev,
+      product_id: String(value),
+      price: defaultPrice !== undefined ? String(defaultPrice) : prev.price,
+    }));
+    setPartSearch('');
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detail Service" size="lg">
@@ -197,6 +218,29 @@ const ServiceDetailModal = ({
                   {partSubmitError}
                 </div>
               )}
+              <div className="space-y-2">
+                <Input
+                  label="Cari Cepat Sparepart"
+                  placeholder="Ketik nama sparepart..."
+                  value={partSearch}
+                  onChange={(e) => setPartSearch(e.target.value)}
+                />
+                {partSearchResults.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {partSearchResults.map((opt) => (
+                      <button
+                        key={String(opt.value)}
+                        type="button"
+                        onClick={() => handlePickPart(opt.value)}
+                        className="p-3 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all text-left"
+                      >
+                        <p className="text-sm font-bold text-slate-800 line-clamp-1">{opt.label}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tap untuk pilih</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
                   label="Produk"
