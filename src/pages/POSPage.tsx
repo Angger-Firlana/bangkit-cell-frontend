@@ -8,6 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Input, Select } from '../components/ui/Input';
 import clsx from 'clsx';
 import { Capacitor } from '@capacitor/core';
+import BluetoothPrinterPickerModal from '../components/bluetooth/BluetoothPrinterPickerModal';
 import {
   buildTransactionReceipt,
   connectBluetoothPrinter,
@@ -29,6 +30,8 @@ const POSPage = () => {
   const [printerStatus, setPrinterStatus] = useState<'idle' | 'connecting' | 'connected' | 'printing'>('idle');
   const printerRef = useRef<BluetoothPrinterConnection | null>(null);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
+  const [isPrinterPickerOpen, setIsPrinterPickerOpen] = useState(false);
+  const [pendingPrint, setPendingPrint] = useState(false);
 
   useEffect(() => {
     if (paymentMethods.length > 0 && paymentMethodId === null) {
@@ -61,7 +64,7 @@ const POSPage = () => {
     }
   };
 
-  const handlePrintTerminal = async () => {
+  const doPrintTerminal = async () => {
     if (!lastTransaction) {
       setPrinterError('Belum ada transaksi yang bisa dicetak.');
       return;
@@ -83,8 +86,30 @@ const POSPage = () => {
     }
   };
 
+  const handlePrintTerminal = async () => {
+    if (nativeAndroid && !printerRef.current && printerStatus !== 'connected') {
+      setPendingPrint(true);
+      setIsPrinterPickerOpen(true);
+      return;
+    }
+    await doPrintTerminal();
+  };
+
   return (
     <div className="relative flex flex-col lg:flex-row h-full gap-6 pb-20 lg:pb-0 min-h-[calc(100vh-12rem)]">
+      <BluetoothPrinterPickerModal
+        isOpen={isPrinterPickerOpen}
+        onClose={() => {
+          setIsPrinterPickerOpen(false);
+          setPendingPrint(false);
+        }}
+        onConnected={() => {
+          if (!pendingPrint) return;
+          setIsPrinterPickerOpen(false);
+          setPendingPrint(false);
+          doPrintTerminal();
+        }}
+      />
       {/* Product Selection Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <Card className="mb-6">
@@ -248,9 +273,19 @@ const POSPage = () => {
               ? 'Mencetak...'
               : 'Print Terminal'}
           </Button>
+          {nativeAndroid && (
+            <Button
+              onClick={() => setIsPrinterPickerOpen(true)}
+              className="w-full"
+              variant="secondary"
+              disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
+            >
+              Pilih Printer
+            </Button>
+          )}
           <p className="text-[10px] font-medium text-slate-400 text-center">
             {nativeAndroid
-              ? 'Connect printer dari Pengaturan > Bluetooth (Native Android) sebelum print.'
+              ? 'Pilih printer sekali, lalu cukup tekan Print.'
               : 'Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.'
             }
           </p>
@@ -366,9 +401,19 @@ const POSPage = () => {
                     ? 'Mencetak...'
                     : 'Print Terminal'}
                 </Button>
+                {nativeAndroid && (
+                  <Button
+                    onClick={() => setIsPrinterPickerOpen(true)}
+                    className="w-full"
+                    variant="secondary"
+                    disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
+                  >
+                    Pilih Printer
+                  </Button>
+                )}
                 <p className="text-[10px] font-medium text-slate-400 text-center">
                   {nativeAndroid
-                    ? 'Connect printer dari Pengaturan > Bluetooth (Native Android) sebelum print.'
+                    ? 'Pilih printer sekali, lalu cukup tekan Print.'
                     : 'Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.'
                   }
                 </p>

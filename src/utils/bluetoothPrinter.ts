@@ -27,6 +27,54 @@ const getPersistedSelectedAddress = (): string | null => {
   }
 };
 
+const persistSelectedAddress = (address: string) => {
+  try {
+    const raw = localStorage.getItem('bangkit-cell-bluetooth');
+    const parsed = raw ? JSON.parse(raw) : {};
+    const next = {
+      ...parsed,
+      state: {
+        ...(parsed?.state ?? {}),
+        selectedAddress: address,
+      },
+    };
+    localStorage.setItem('bangkit-cell-bluetooth', JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+};
+
+const pickRecommendedBondedPrinter = (devices: { name: string | null; address: string }[]) => {
+  if (devices.length === 0) return null;
+  if (devices.length === 1) return devices[0]?.address ?? null;
+
+  const score = (name: string | null) => {
+    if (!name) return 0;
+    const n = name.toLowerCase();
+    let s = 0;
+    if (n.includes('printer')) s += 6;
+    if (n.includes('thermal')) s += 6;
+    if (n.includes('pos')) s += 4;
+    if (n.includes('esc')) s += 3;
+    if (n.includes('epson')) s += 3;
+    if (n.includes('xprinter')) s += 3;
+    if (n.includes('gprinter')) s += 3;
+    if (n.includes('zjiang') || n.includes('zj-')) s += 2;
+    if (n.includes('bixolon')) s += 2;
+    if (n.includes('star')) s += 2;
+    if (n.includes('rp-') || n.includes('rpp')) s += 2;
+    if (n.includes('tm-')) s += 2;
+    return s;
+  };
+
+  const scored = devices
+    .map((d) => ({ address: d.address, score: score(d.name) }))
+    .sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (!best || best.score < 6) return null;
+  return best.address;
+};
+
 const DEFAULT_SERVICE_UUIDS: any[] = [
   0xFFE0,
   0xFF00,
@@ -102,9 +150,15 @@ export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnect
       return { mode: 'native', address: existing.address };
     }
 
-    const address = getPersistedSelectedAddress();
+    let address = getPersistedSelectedAddress();
     if (!address) {
-      throw new Error('Pilih device Bluetooth di Pengaturan > Bluetooth (Native Android), lalu Connect dulu.');
+      const bonded = await BluetoothNative.listBondedDevices();
+      address = pickRecommendedBondedPrinter(bonded.devices ?? []);
+      if (address) persistSelectedAddress(address);
+    }
+
+    if (!address) {
+      throw new Error('Printer belum dipilih. Tap "Pilih Printer" dulu.');
     }
 
     await BluetoothNative.connect({ address });

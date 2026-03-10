@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Modal from '../ui/Modal';
 import StatusPill from '../common/StatusPill';
 import { Input, Select } from '../ui/Input';
@@ -6,6 +7,7 @@ import type { ServiceJob, ServiceJobPart } from '../../types/serviceJob';
 import type { PaymentMethod } from '../../types/pos';
 import type { PartFormState, CheckoutFormState } from '../../types/serviceUI';
 import { Capacitor } from '@capacitor/core';
+import BluetoothPrinterPickerModal from '../bluetooth/BluetoothPrinterPickerModal';
 
 type StatusTone = { label: string; tone: 'warning' | 'info' | 'success' | 'neutral' };
 
@@ -77,9 +79,24 @@ const ServiceDetailModal = ({
   productPriceMap,
 }: ServiceDetailModalProps) => {
   const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const [isPrinterPickerOpen, setIsPrinterPickerOpen] = useState(false);
+  const [pendingPrint, setPendingPrint] = useState(false);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detail Service" size="lg">
+      <BluetoothPrinterPickerModal
+        isOpen={isPrinterPickerOpen}
+        onClose={() => {
+          setIsPrinterPickerOpen(false);
+          setPendingPrint(false);
+        }}
+        onConnected={() => {
+          if (!pendingPrint) return;
+          setIsPrinterPickerOpen(false);
+          setPendingPrint(false);
+          onPrint();
+        }}
+      />
       {isLoading ? (
         <div className="space-y-4 animate-pulse">
           <div className="h-6 bg-slate-100 rounded-lg"></div>
@@ -272,7 +289,7 @@ const ServiceDetailModal = ({
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">Cetak Bluetooth</p>
             <p className="text-sm text-slate-500">
               {nativeAndroid
-                ? 'Pastikan printer sudah pairing di Android, lalu Connect dari Pengaturan > Bluetooth (Native Android).'
+                ? 'Tekan Pilih Printer, lalu cukup tekan Print.'
                 : 'Gunakan Chrome/Edge dan pastikan printer dalam mode BLE (Web Bluetooth butuh HTTPS).'
               }
             </p>
@@ -284,7 +301,14 @@ const ServiceDetailModal = ({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={onPrint}
+                onClick={() => {
+                  if (nativeAndroid && printerStatus !== 'connected') {
+                    setPendingPrint(true);
+                    setIsPrinterPickerOpen(true);
+                    return;
+                  }
+                  onPrint();
+                }}
                 className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-70"
                 disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
               >
@@ -294,6 +318,16 @@ const ServiceDetailModal = ({
                     ? 'Mencetak...'
                     : 'Print Thermal'}
               </button>
+              {nativeAndroid && (
+                <button
+                  type="button"
+                  onClick={() => setIsPrinterPickerOpen(true)}
+                  className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all disabled:opacity-70"
+                  disabled={printerStatus === 'connecting' || printerStatus === 'printing'}
+                >
+                  Pilih Printer
+                </button>
+              )}
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                 {printerStatus === 'connected' ? 'Printer Terhubung' : 'Belum Terhubung'}
               </span>
