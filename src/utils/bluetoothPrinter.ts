@@ -1,11 +1,30 @@
 import type { ServiceJob } from '../types/serviceJob';
 import { formatCurrency, formatDateTime } from './format';
 import type { Transaction } from '../types/pos';  
+import { Capacitor } from '@capacitor/core';
+import { BluetoothNative } from '../native/BluetoothNative';
 
 export type BluetoothPrinterConnection = {
+  mode: 'web';
   device: any;
   server: any;
   characteristic: any;
+} | {
+  mode: 'native';
+  address: string;
+};
+
+const isNativeAndroid = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+
+const getPersistedSelectedAddress = (): string | null => {
+  try {
+    const raw = localStorage.getItem('bangkit-cell-bluetooth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { state?: { selectedAddress?: string | null } };
+    return parsed?.state?.selectedAddress ?? null;
+  } catch {
+    return null;
+  }
 };
 
 const DEFAULT_SERVICE_UUIDS: any[] = [
@@ -59,6 +78,39 @@ const findCharacteristicByUuid = async (
 };
 
 export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnection> => {
+  if (isNativeAndroid()) {
+    const supportedRes = await BluetoothNative.isSupported();
+    if (!supportedRes.supported) {
+      throw new Error('Device tidak mendukung Bluetooth.');
+    }
+
+    const permRes = await BluetoothNative.requestPermissions();
+    if (!permRes.granted) {
+      throw new Error('Izin Bluetooth ditolak. Buka Pengaturan aplikasi dan izinkan Nearby devices/Bluetooth.');
+    }
+
+    const enabledRes = await BluetoothNative.isEnabled();
+    if (!enabledRes.enabled) {
+      const enableAttempt = await BluetoothNative.requestEnable();
+      if (!enableAttempt.enabled) {
+        throw new Error('Bluetooth belum aktif.');
+      }
+    }
+
+    const existing = await BluetoothNative.getConnection();
+    if (existing.connected && existing.address) {
+      return { mode: 'native', address: existing.address };
+    }
+
+    const address = getPersistedSelectedAddress();
+    if (!address) {
+      throw new Error('Pilih device Bluetooth di Pengaturan > Bluetooth (Native Android), lalu Connect dulu.');
+    }
+
+    await BluetoothNative.connect({ address });
+    return { mode: 'native', address };
+  }
+
   if (!(navigator as any).bluetooth) {
     throw new Error('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge (Android atau desktop).');
   }
@@ -84,7 +136,7 @@ export const connectBluetoothPrinter = async (): Promise<BluetoothPrinterConnect
     throw new Error('Karakteristik printer tidak ditemukan. Pastikan printer dalam mode BLE.');
   }
 
-  return { device, server, characteristic: writableCharacteristic };
+  return { mode: 'web', device, server, characteristic: writableCharacteristic };
 };
 
 const writeChunk = async (
@@ -102,6 +154,11 @@ export const printBluetoothText = async (
   connection: BluetoothPrinterConnection,
   text: string
 ) => {
+  if (connection.mode === 'native') {
+    await BluetoothNative.write({ data: text, encoding: 'utf8' });
+    return;
+  }
+
   const data = encoder.encode(text);
   for (let offset = 0; offset < data.length; offset += chunkSize) {
     const chunk = data.slice(offset, offset + chunkSize);

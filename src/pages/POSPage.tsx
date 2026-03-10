@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input, Select } from '../components/ui/Input';
 import clsx from 'clsx';
+import { Capacitor } from '@capacitor/core';
 import {
   buildTransactionReceipt,
   connectBluetoothPrinter,
@@ -16,6 +17,7 @@ import {
 import type { Transaction } from '../types/pos';
 
 const POSPage = () => {
+  const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   const { products, cart, paymentMethods, total, isLoading, error, addToCart, updateQty, checkout } = usePOS();
   const [query, setQuery] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState<number | null>(null);
@@ -247,7 +249,10 @@ const POSPage = () => {
               : 'Print Terminal'}
           </Button>
           <p className="text-[10px] font-medium text-slate-400 text-center">
-            Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.
+            {nativeAndroid
+              ? 'Connect printer dari Pengaturan > Bluetooth (Native Android) sebelum print.'
+              : 'Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.'
+            }
           </p>
         </div>
       </div>
@@ -362,7 +367,10 @@ const POSPage = () => {
                     : 'Print Terminal'}
                 </Button>
                 <p className="text-[10px] font-medium text-slate-400 text-center">
-                  Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.
+                  {nativeAndroid
+                    ? 'Connect printer dari Pengaturan > Bluetooth (Native Android) sebelum print.'
+                    : 'Gunakan Chrome/Edge (Android atau desktop) dan pastikan printer dalam mode BLE.'
+                  }
                 </p>
               </div>
             </div>

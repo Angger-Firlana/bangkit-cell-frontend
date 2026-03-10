@@ -5,6 +5,7 @@ import { formatCurrency, formatDateTime } from '../../utils/format';
 import type { ServiceJob, ServiceJobPart } from '../../types/serviceJob';
 import type { PaymentMethod } from '../../types/pos';
 import type { PartFormState, CheckoutFormState } from '../../types/serviceUI';
+import { Capacitor } from '@capacitor/core';
 
 type StatusTone = { label: string; tone: 'warning' | 'info' | 'success' | 'neutral' };
 
@@ -75,6 +76,8 @@ const ServiceDetailModal = ({
   onPaidAmountChange,
   productPriceMap,
 }: ServiceDetailModalProps) => {
+  const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Detail Service" size="lg">
       {isLoading ? (
@@ -268,7 +271,10 @@ const ServiceDetailModal = ({
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-3">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-black">Cetak Bluetooth</p>
             <p className="text-sm text-slate-500">
-              Pastikan printer thermal Bluetooth aktif dan sudah dalam mode BLE.
+              {nativeAndroid
+                ? 'Pastikan printer sudah pairing di Android, lalu Connect dari Pengaturan > Bluetooth (Native Android).'
+                : 'Gunakan Chrome/Edge dan pastikan printer dalam mode BLE (Web Bluetooth butuh HTTPS).'
+              }
             </p>
             {printerError && (
               <div className="bg-red-50 border border-red-100 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl">
