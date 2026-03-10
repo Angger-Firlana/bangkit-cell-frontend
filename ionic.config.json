@@ -1,0 +1,7 @@
+{
+    "name": "bangkitcell",
+    "integrations": {
+        "capacitor": {}
+    },
+    "type": "react"
+}

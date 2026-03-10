@@ -1,0 +1,7 @@
+{
+  "appId": "io.ionic.bangkitcell",
+  "appName": "bangkitcell",
+  "npmClient": "npm",
+  "webDir": "dist",
+  "cordova": {}
+}
